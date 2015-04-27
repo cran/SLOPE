@@ -1,0 +1,18 @@
+citHeader("To cite SLOPE in publications use:")
+
+citEntry(entry = "article",
+  title        = "SLOPE -- Adaptive Variable Selection via Convex Optimization",
+  author       = personList(as.person("Malgorzata Bogdan"),
+                   as.person("Ewout van den Berg"),
+                   as.person("Chiara Sabatti"),
+                   as.person("Weijie Su"),
+                   as.person("Emmanuel Candes")),
+  journal      = "arXiv:1407.3824",
+  year         = "2014",
+  url          = "http://arxiv.org/abs/1407.3824",
+
+  textVersion  = paste(
+    "Malgorzata Bogdan, Ewout van den Berg, Chiara Sabatti, Weijie Su, Emmanuel Candes (2014).",
+    '"SLOPE -- Adaptive Variable Selection via Convex Optimization."',
+    "arXiv:1407.3824.")
+)
