@@ -4,6 +4,8 @@ estimate_noise <- function(X, y, intercept = TRUE) {
   if (intercept)
     X = cbind(rep(1,n), X)
   p = ncol(X)
+  stopifnot(n > p)
+
   fit = lm.fit(X, y)
   sqrt(sum(fit$residuals^2) / (n-p))
 }
@@ -33,4 +35,19 @@ random_problem <- function(n, p, k=NULL, amplitude=3, sigma=1) {
   beta = amplitude * (1:p %in% nonzero)
   y = X %*% beta + rnorm(n, sd = sigma)
   list(X = X, y = y, beta = beta)
+}
+
+# Evaluate an expression with the given random seed, then restore the old seed.
+with_seed <- function(seed, expr) {
+  seed.old <- if (exists('.Random.seed')) .Random.seed else NULL
+  set.seed(seed)
+  on.exit({
+    if (is.null(seed.old)) {
+      if (exists('.Random.seed'))
+        rm(.Random.seed, envir=.GlobalEnv)
+    } else {
+      .Random.seed <<- seed.old
+    }
+  })
+  expr
 }

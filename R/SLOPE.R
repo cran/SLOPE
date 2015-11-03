@@ -1,3 +1,5 @@
+#' @importFrom stats lm.fit qnorm rnorm
+#' @importFrom utils tail
 #' @import Rcpp
 #' @useDynLib SLOPE
 NULL
@@ -94,11 +96,13 @@ SLOPE <- function(X, y, fdr = 0.20, lambda = 'gaussian', sigma = NULL,
     selected = NULL
     repeat {
       selected.prev = selected
-      sigma = c(sigma, estimate_noise(X[,selected], y))
+      sigma = c(sigma, estimate_noise(X[,selected,drop=F], y))
       result = SLOPE_solver_call(solver, X, y, tail(sigma,1) * lambda)
       selected = result$selected
       if (identical(selected, selected.prev))
         break
+      if (length(selected)+1 >= n)
+        stop('Selected >= n-1 variables. Cannot estimate variance.')
     }
   } else {
     result = SLOPE_solver_call(solver, X, y, sigma * lambda)
