@@ -2,68 +2,382 @@
 % Please edit documentation in R/SLOPE.R
 \name{SLOPE}
 \alias{SLOPE}
-\title{SLOPE: Sorted L1 Penalized Estimation}
+\title{Sorted L-One Penalized Estimation}
 \usage{
-SLOPE(X, y, fdr = 0.2, lambda = "gaussian", sigma = NULL,
-  normalize = TRUE, solver = c("default", "matlab"), ...)
+SLOPE(
+  x,
+  y,
+  family = c("gaussian", "binomial", "multinomial", "poisson"),
+  intercept = TRUE,
+  center = !inherits(x, "sparseMatrix"),
+  scale = c("l2", "l1", "sd", "none"),
+  sigma = c("path", "estimate"),
+  lambda = c("gaussian", "bh", "oscar", "bhq"),
+  lambda_min_ratio = if (NROW(x) < NCOL(x)) 0.01 else 1e-04,
+  n_sigma = if (sigma[1] == "estimate") 1 else 100,
+  q = 0.1 * min(1, NROW(x)/NCOL(x)),
+  screen = TRUE,
+  screen_alg = c("strong", "previous"),
+  tol_dev_change = 1e-05,
+  tol_dev_ratio = 0.995,
+  max_variables = NROW(x),
+  solver = c("fista", "admm", "matlab", "default"),
+  max_passes = 1e+06,
+  tol_abs = 1e-05,
+  tol_rel = 1e-04,
+  tol_rel_gap = 1e-05,
+  tol_infeas = 0.001,
+  diagnostics = FALSE,
+  verbosity = 0,
+  X,
+  fdr,
+  normalize
+)
 }
 \arguments{
-\item{X}{the \eqn{n}-by-\eqn{p} design matrix}
+\item{x}{the design matrix, which can be either a dense
+matrix of the standard \emph{matrix} class, or a sparse matrix
+inheriting from \link[Matrix:sparseMatrix]{Matrix::sparseMatrix}. Data frames will
+be converted to matrices internally.}
 
-\item{y}{response vector of length \eqn{n}}
+\item{y}{the response, which for \code{family = "gaussian"} must be numeric; for
+\code{family = "binomial"} or \code{family = "multinomial"}, it can be a factor.}
 
-\item{fdr}{target FDR (false discovery rate)}
+\item{family}{model family (objective); see \strong{Families} for details.}
 
-\item{lambda}{specifcation of \eqn{\lambda}, either one of "bhq" or "gaussian",
-or a vector of length \eqn{p}, sorted in decreasing order
-(see \code{\link{create_lambda}})}
+\item{intercept}{whether to fit an intercept}
 
-\item{sigma}{noise level. If omitted, estimated from the data (see Details).}
+\item{center}{whether to center predictors or not by their mean. Defaults
+to \code{TRUE} if \code{x} is dense and \code{FALSE} otherwise.}
 
-\item{normalize}{whether to center the input data and re-scale the columns
-of the design matrix to have unit norm. Do not disable this unless you are
-certain that your data is appropriately pre-processed.}
+\item{scale}{type of scaling to apply to predictors; \code{"l1"} scales
+predictors to have L1-norm of one, \code{"l2"} scales predictors to have
+L2-norm one, \code{"sd"} scales predictors to have standard deviation one.}
 
-\item{solver}{which SLOPE solver to use (see Details)}
+\item{sigma}{regularization path: either a decreasing numeric
+vector or a character vector; in the latter case, the choices are:
+\itemize{
+\item \code{sigma = "path"}, which computes a \code{sigma} sequence
+where the first value corresponds to the intercept-only (null) model, and
+\item \code{sigma = "estimate"}, which estimates a \emph{single} \code{sigma} using a technique
+outlined in Bogdan et al. (2015).
+}}
 
-\item{...}{additional arguments to pass to the solver (see the relevant
-solver)}
+\item{lambda}{either a character vector indicating the method used
+to construct the lambda path or a numeric non-decreasing
+vector with length equal to the number
+of coefficients in the model; see section \strong{Regularization sequences}
+for details.}
+
+\item{lambda_min_ratio}{smallest value for \code{lambda} as a fraction of
+\code{lambda_max}; used in the selection of \code{sigma} when \code{sigma = "path"}.}
+
+\item{n_sigma}{length of regularization path}
+
+\item{q}{parameter controlling the shape of the lambda sequence, with
+usage varying depending on the type of path used and has no effect
+is a custom \code{lambda} sequence is used.}
+
+\item{screen}{whether to use predictor screening rules (rules that allow
+some predictors to be discarded prior to fitting), which improve speed
+greately when the number of predictors is larger than the number
+of observations.}
+
+\item{screen_alg}{what type of screening algorithm to use.
+\itemize{
+\item \code{"strong"} uses the set from the strong screening rule and check
+against the full set
+\item \code{"previous"} first fits with the previous active set, then checks
+against the strong set, and finally against the full set if there are
+no violations in the strong set
+}}
+
+\item{tol_dev_change}{the regularization path is stopped if the
+fractional change in deviance falls below this value; note that this is
+automatically set to 0 if a sigma is manually entered}
+
+\item{tol_dev_ratio}{the regularization path is stopped if the
+deviance ratio
+\eqn{1 - \mathrm{deviance}/\mathrm{(null-deviance)}}{1 - deviance/(null deviance)}
+is above this threshold}
+
+\item{max_variables}{criterion for stopping the path in terms of the
+maximum number of unique, nonzero coefficients in absolute value in model.
+For the multinomial family, this value will be multiplied internally with
+the number of levels of the response minus one.}
+
+\item{solver}{type of solver use, either \code{"fista"} or \code{"admm"}. (\code{"default"}
+and \code{"matlab"} are deprecated); all families currently support
+FISTA but only \code{family = "gaussian"} supports ADMM.}
+
+\item{max_passes}{maximum number of passes (outer iterations) for solver}
+
+\item{tol_abs}{absolute tolerance criterion for ADMM solver}
+
+\item{tol_rel}{relative tolerance criterion for ADMM solver}
+
+\item{tol_rel_gap}{stopping criterion for the duality gap; used only with
+FISTA solver.}
+
+\item{tol_infeas}{stopping criterion for the level of infeasibility; used
+with FISTA solver and KKT checks in screening algorithm.}
+
+\item{diagnostics}{whether to save diagnostics from the solver
+(timings and other values depending on type of solver)}
+
+\item{verbosity}{level of verbosity for displaying output from the
+program. Setting this to 1 displays basic information on the path level,
+2 a little bit more information on the path level, and 3 displays
+information from the solver.}
+
+\item{X}{deprecated. please use \code{x} instead}
+
+\item{fdr}{deprecated. please use \code{q} instead}
+
+\item{normalize}{deprecated. please use \code{scale} and \code{center} instead}
 }
 \value{
-An object of class \code{SLOPE.result}. This object is a list
- containing at least the following components:
- \item{lambda}{the \eqn{\lambda} sequence used}
- \item{lambda_method}{method of \eqn{\lambda} construction
-  ("bhq", "gaussian", or "user")}
- \item{sigma}{(sequence of) noise level(s) used}
- \item{beta}{optimized coefficient vector \eqn{\beta}}
- \item{selected}{selected variables
-   (variables \eqn{i} with \eqn{\beta_i > 0})}
+An object of class \code{"SLOPE"} with the following slots:
+\item{coefficients}{
+a three-dimensional array of the coefficients from the
+model fit, including the intercept if it was fit.
+There is one row for each coefficient, one column
+for each target (dependent variable), and
+one slice for each penalty.
+}
+\item{nonzeros}{
+a three-dimensional logical array indicating whether a
+coefficient was zero or not
+}
+\item{lambda}{
+the lambda vector that when multiplied by a value in \code{sigma}
+gives the penalty vector at that point along the regularization
+path
+}
+\item{sigma}{the vector of sigma, indicating the scale of the lambda vector}
+\item{class_names}{
+a character vector giving the names of the classes for binomial and
+multinomial families
+}
+\item{passes}{the number of passes the solver took at each step on the path}
+\item{violations}{
+the number of violations of the screening rule at each step on the path;
+only available if \code{diagnostics = TRUE} in the call to \code{\link[=SLOPE]{SLOPE()}}.
+}
+\item{active_sets}{
+a list where each element indicates the indices of the
+coefficients that were active at that point in the regularization path
+}
+\item{unique}{
+the number of unique predictors (in absolute value)
+}
+\item{deviance_ratio}{
+the deviance ratio (as a fraction of 1)
+}
+\item{null_deviance}{
+the deviance of the null (intercept-only) model
+}
+\item{family}{
+the name of the family used in the model fit
+}
+\item{diagnostics}{
+a \code{data.frame} of objective values for the primal and dual problems, as
+well as a measure of the infeasibility, time, and iteration; only
+available if \code{diagnostics = TRUE} in the call to \code{\link[=SLOPE]{SLOPE()}}.
+}
+\item{call}{the call used for fitting the model}
 }
 \description{
-Performs variable selection using SLOPE (Sorted L1 Penalized Estimation).
-Given a design matrix \eqn{X} and a response vector \eqn{y}, find the
-coefficient vector \eqn{\beta} minimizing
-\deqn{\frac{1}{2} \Vert X\beta - y \Vert_2^2 +
-      \sigma \cdot \sum_{i=1}^p \lambda_i |\beta|_{(i)},}
-where the \eqn{\lambda} sequence is chosen to control the false discovery
-rate associated with nonzero components of \eqn{\beta}.
+Fit a generalized linear model regularized with the
+sorted L1 norm, which applies a
+non-increasing regularization sequence to the
+coefficient vector (\eqn{\beta}) after having sorted it
+in decreasing order according  to its absolute values.
 }
 \details{
-At present, two solvers for the SLOPE problem are supported. By
-default, we use \code{\link{SLOPE_solver}}, which is mostly written in R but
-uses a fast prox implemented in C. If you have MATLAB installed, it is also
-possible to use the TFOCS solver for SLOPE. This requires the MATLAB package
-TFOCS and the R package \code{R.matlab}.
+\code{SLOPE()} solves a convex minimization problem with the
+following composite objective:
+\deqn{
+  f(\beta) + \sigma \sum_{i=j}^p \lambda_j |\beta|_{(j)},
+}{
+  f(\beta) + \sigma \sum \lambda |\beta|(j),
+}
+where \eqn{f(\beta)} is a smooth and convex function of \eqn{\beta} and
+the second part is the sorted L1-norm.
+In ordinary least-squares regression,
+\eqn{f(\beta)} is simply the squared norm of the least-squares residuals.
+See section \strong{Families} for specifics regarding the various types of
+\eqn{f(\beta)} (model families) that are allowed in \code{SLOPE()}.
 
-If the noise level is unknown, it is estimated from the data using one of
-two methods. When \eqn{n} is large enough compared to \eqn{p}, the classical
-unbiased estimate of \eqn{\sigma^2} is used. Otherwise, the
-\emph{iterative SLOPE} algorithm is used, in which a decreasing sequence of
-\eqn{\sigma^2} estimates is used until the set of selected variables
-stabilizes. For details, see Section 3.2.3 of the SLOPE paper.
+By default, \code{SLOPE()} fits a path of models, each corresponding to
+a separate regularization sequence, starting from
+the null (intercept-only) model to an almost completely unregularized
+model. These regularization sequences are parameterized using
+\eqn{\lambda} and \eqn{\sigma}, with only \eqn{\sigma} varying along the
+path. The length of the path can be manually, but will terminate
+prematurely depending on
+arguments \code{tol_dev_change}, \code{tol_dev_ratio}, and \code{max_variables}.
+This means that unless these arguments are modified, the path is not
+guaranteed to be of length \code{n_sigma}.
+}
+\section{Families}{
+
+
+\strong{Gaussian}
+
+The Gaussian model (Ordinary Least Squares) minimizes the following
+objective:
+\deqn{
+  \frac 12 \Vert y - X\beta\Vert_2^2
+}{
+  (1/2)||y - X \beta||_2^2
+}
+
+\strong{Binomial}
+
+The binomial model (logistic regression) has the following objective:
+\deqn{
+  \sum_{i=1}^n \log\left(1+ \exp\left(- y_i \left(x_i^T\beta + \alpha \right) \right) \right)
+}{
+  \sum log(1+ exp(- y_i x_i^T \beta))
+}
+with \eqn{y \in \{-1, 1\}}{y in {-1, 1}}.
+
+\strong{Poisson}
+
+In poisson regression, we use the following objective:
+
+\deqn{
+  -\sum_{i=1}^n \left(y_i\left(x_i^T\beta + \alpha\right) - \exp\left(x_i^T\beta + \alpha\right)\right)
+}{
+  -\sum (y_i(x_i^T\beta + \alpha) - exp(x_i^T\beta + \alpha))
+}
+
+\strong{Multinomial}
+
+In multinomial regression, we minimize the full-rank objective
+\deqn{
+  -\sum_{i=1}^n\left( \sum_{k=1}^{m-1} y_{ik}(x_i^T\beta_k + \alpha_k)
+                     - \log\sum_{k=1}^{m-1} \exp(x_i^T\beta_k + \alpha_k) \right)
+}{
+  -\sum(y_ik(x_i^T\beta_k + \alpha_k) - log(\sum exp(x_i^T\beta_k + \alpha_k)))
+}
+with \eqn{y_{ik}} being the element in a \eqn{n} by \eqn{(m-1)} matrix, where
+\eqn{m} is the number of classes in the response.
+}
+
+\section{Regularization sequences}{
+
+There are multiple ways of specifying the \code{lambda} sequence
+in \code{SLOPE()}. It is, first of all, possible to select the sequence manually by
+using a non-increasing
+numeric vector as argument instead of a character.
+If all \code{lambda} are the same value, this will
+lead to the ordinary lasso penalty. The greater the differences are between
+consecutive values along the sequence, the more clustering behavior
+will the model exhibit. Note, also, that the scale of the \eqn{\lambda}
+vector makes no difference if \code{sigma = NULL}, since \code{sigma} will be
+selected automatically to ensure that the model is completely sparse at the
+beginning and almost unregularized at the end. If, however, both
+\code{sigma} and \code{lambda} are manually specified, both of the scales will
+matter.
+
+Instead of choosing the sequence manually, one of the following
+automatically generated sequences may be chosen.
+
+\strong{BH (Benjamini--Hochberg)}
+
+If \code{lambda = "bh"}, the sequence used is that referred to
+as \eqn{\lambda^{(\mathrm{BH})}}{\lambda^(BH)} by Bogdan et al, which sets
+\eqn{\lambda} according to
+\deqn{
+  \lambda_i = \Phi^{-1}(1 - iq/(2p)),
+}{
+  \lambda_i = \Phi^-1(1 - iq/(2p)),
+}
+for \eqn{i=1,\dots,p}, where \eqn{\Phi^{-1}}{\Phi^-1} is the quantile
+function for the standard normal distribution and \eqn{q} is a parameter
+that can be set by the user in the call to \code{SLOPE()}.
+
+\strong{Gaussian}
+
+This penalty sequence is related to BH, such that
+\deqn{
+  \lambda_i = \lambda^{(\mathrm{BH})}_i \sqrt{1 + w(i-1)\cdot \mathrm{cumsum}(\lambda^2)_i},
+}{
+  \lambda_i = \lambda^(BH)_i \sqrt{1 + w(i-1) * cumsum(\lambda^2)_i},
+}
+for \eqn{i=1,\dots,p}, where \eqn{w(k) = 1/(n-k-1)}. We let
+\eqn{\lambda_1 = \lambda^{(\mathrm{BH})}_1}{\lambda_1 = \lambda^(BH)_1} and
+adjust the sequence to make sure that it's non-increasing.
+Note that if \eqn{p} is large relative
+to \eqn{n}, this option will result in a constant sequence, which is
+usually not what you would want.
+
+\strong{OSCAR}
+
+This sequence comes from Bondell and Reich and is a linearly non-increasing
+sequence such that
+\deqn{
+  \lambda_i = q(p - i) + 1.
+}
+for \eqn{i = 1,\dots,p}.
+}
+
+\section{Solvers}{
+
+
+There are currently two solvers available for SLOPE: FISTA (Beck and
+Teboulle 2009) and ADMM (Boyd et al. 2008). FISTA is available for
+families but ADMM is currently only available for \code{family = "gaussian"}.
+}
+
+\examples{
+
+# Gaussian response, default lambda sequence
+fit <- SLOPE(bodyfat$x, bodyfat$y)
+
+# Poisson response, OSCAR-type lambda sequence
+fit <- SLOPE(abalone$x,
+             abalone$y,
+             family = "poisson",
+             lambda = "oscar",
+             q = 0.4)
+
+# Multinomial response, custom sigma and lambda
+m <- length(unique(wine$y)) - 1
+p <- ncol(wine$x)
+
+sigma <- 0.005
+lambda <- exp(seq(log(2), log(1.8), length.out = p*m))
+
+fit <- SLOPE(wine$x,
+             wine$y,
+             family = "multinomial",
+             lambda = lambda,
+             sigma = sigma)
+
+}
+\references{
+Bogdan, M., van den Berg, E., Sabatti, C., Su, W., & Candès, E. J. (2015).
+SLOPE -- adaptive variable selection via convex optimization. The Annals of
+Applied Statistics, 9(3), 1103–1140. \url{https://doi.org/10/gfgwzt}
+
+Bondell, H. D., & Reich, B. J. (2008). Simultaneous Regression Shrinkage,
+Variable Selection, and Supervised Clustering of Predictors with OSCAR.
+Biometrics, 64(1), 115–123. JSTOR.
+\url{https://doi.org/10.1111/j.1541-0420.2007.00843.x}
+
+Boyd, S., Parikh, N., Chu, E., Peleato, B., & Eckstein, J. (2010).
+Distributed Optimization and Statistical Learning via the Alternating
+Direction Method of Multipliers. Foundations and Trends® in Machine Learning,
+3(1), 1–122. \url{https://doi.org/10.1561/2200000016}
+
+Beck, A., & Teboulle, M. (2009). A Fast Iterative Shrinkage-Thresholding
+Algorithm for Linear Inverse Problems. SIAM Journal on Imaging Sciences,
+2(1), 183–202. \url{https://doi.org/10.1137/080716542}
 }
 \seealso{
-\code{\link{SLOPE_solver}}
+\code{\link[=plot.SLOPE]{plot.SLOPE()}}, \code{\link[=plotDiagnostics]{plotDiagnostics()}}, \code{\link[=score]{score()}}, \code{\link[=predict.SLOPE]{predict.SLOPE()}},
+\code{\link[=trainSLOPE]{trainSLOPE()}}, \code{\link[=coef.SLOPE]{coef.SLOPE()}}, \code{\link[=print.SLOPE]{print.SLOPE()}}
 }
-

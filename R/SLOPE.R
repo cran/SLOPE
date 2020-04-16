@@ -1,162 +1,627 @@
-#' @importFrom stats lm.fit qnorm rnorm
-#' @importFrom utils tail
-#' @import Rcpp
-#' @useDynLib SLOPE
-NULL
-
-#' SLOPE: Sorted L1 Penalized Estimation
+#' Sorted L-One Penalized Estimation
 #'
-#' Performs variable selection using SLOPE (Sorted L1 Penalized Estimation).
-#' Given a design matrix \eqn{X} and a response vector \eqn{y}, find the
-#' coefficient vector \eqn{\beta} minimizing
-#' \deqn{\frac{1}{2} \Vert X\beta - y \Vert_2^2 +
-#'       \sigma \cdot \sum_{i=1}^p \lambda_i |\beta|_{(i)},}
-#' where the \eqn{\lambda} sequence is chosen to control the false discovery
-#' rate associated with nonzero components of \eqn{\beta}.
+#' Fit a generalized linear model regularized with the
+#' sorted L1 norm, which applies a
+#' non-increasing regularization sequence to the
+#' coefficient vector (\eqn{\beta}) after having sorted it
+#' in decreasing order according  to its absolute values.
 #'
-#' @param X the \eqn{n}-by-\eqn{p} design matrix
-#' @param y response vector of length \eqn{n}
-#' @param fdr target FDR (false discovery rate)
-#' @param lambda specifcation of \eqn{\lambda}, either one of "bhq" or "gaussian",
-#'  or a vector of length \eqn{p}, sorted in decreasing order
-#'  (see \code{\link{create_lambda}})
-#' @param sigma noise level. If omitted, estimated from the data (see Details).
-#' @param normalize whether to center the input data and re-scale the columns
-#'  of the design matrix to have unit norm. Do not disable this unless you are
-#'  certain that your data is appropriately pre-processed.
-#' @param solver which SLOPE solver to use (see Details)
-#' @param ... additional arguments to pass to the solver (see the relevant
-#'  solver)
+#' `SLOPE()` solves a convex minimization problem with the
+#' following composite objective:
+#' \deqn{
+#'   f(\beta) + \sigma \sum_{i=j}^p \lambda_j |\beta|_{(j)},
+#' }{
+#'   f(\beta) + \sigma \sum \lambda |\beta|(j),
+#' }
+#' where \eqn{f(\beta)} is a smooth and convex function of \eqn{\beta} and
+#' the second part is the sorted L1-norm.
+#' In ordinary least-squares regression,
+#' \eqn{f(\beta)} is simply the squared norm of the least-squares residuals.
+#' See section **Families** for specifics regarding the various types of
+#' \eqn{f(\beta)} (model families) that are allowed in `SLOPE()`.
 #'
-#' @return An object of class \code{SLOPE.result}. This object is a list
-#'  containing at least the following components:
-#'  \item{lambda}{the \eqn{\lambda} sequence used}
-#'  \item{lambda_method}{method of \eqn{\lambda} construction
-#'   ("bhq", "gaussian", or "user")}
-#'  \item{sigma}{(sequence of) noise level(s) used}
-#'  \item{beta}{optimized coefficient vector \eqn{\beta}}
-#'  \item{selected}{selected variables
-#'    (variables \eqn{i} with \eqn{\beta_i > 0})}
+#' By default, `SLOPE()` fits a path of models, each corresponding to
+#' a separate regularization sequence, starting from
+#' the null (intercept-only) model to an almost completely unregularized
+#' model. These regularization sequences are parameterized using
+#' \eqn{\lambda} and \eqn{\sigma}, with only \eqn{\sigma} varying along the
+#' path. The length of the path can be manually, but will terminate
+#' prematurely depending on
+#' arguments `tol_dev_change`, `tol_dev_ratio`, and `max_variables`.
+#' This means that unless these arguments are modified, the path is not
+#' guaranteed to be of length `n_sigma`.
 #'
-#' @details At present, two solvers for the SLOPE problem are supported. By
-#' default, we use \code{\link{SLOPE_solver}}, which is mostly written in R but
-#' uses a fast prox implemented in C. If you have MATLAB installed, it is also
-#' possible to use the TFOCS solver for SLOPE. This requires the MATLAB package
-#' TFOCS and the R package \code{R.matlab}.
+#' @section Families:
 #'
-#' If the noise level is unknown, it is estimated from the data using one of
-#' two methods. When \eqn{n} is large enough compared to \eqn{p}, the classical
-#' unbiased estimate of \eqn{\sigma^2} is used. Otherwise, the
-#' \emph{iterative SLOPE} algorithm is used, in which a decreasing sequence of
-#' \eqn{\sigma^2} estimates is used until the set of selected variables
-#' stabilizes. For details, see Section 3.2.3 of the SLOPE paper.
+#' **Gaussian**
 #'
-#' @seealso \code{\link{SLOPE_solver}}
+#' The Gaussian model (Ordinary Least Squares) minimizes the following
+#' objective:
+#' \deqn{
+#'   \frac 12 \Vert y - X\beta\Vert_2^2
+#' }{
+#'   (1/2)||y - X \beta||_2^2
+#' }
+#'
+#' **Binomial**
+#'
+#' The binomial model (logistic regression) has the following objective:
+#' \deqn{
+#'   \sum_{i=1}^n \log\left(1+ \exp\left(- y_i \left(x_i^T\beta + \alpha \right) \right) \right)
+#' }{
+#'   \sum log(1+ exp(- y_i x_i^T \beta))
+#' }
+#' with \eqn{y \in \{-1, 1\}}{y in {-1, 1}}.
+#'
+#' **Poisson**
+#'
+#' In poisson regression, we use the following objective:
+#'
+#' \deqn{
+#'   -\sum_{i=1}^n \left(y_i\left(x_i^T\beta + \alpha\right) - \exp\left(x_i^T\beta + \alpha\right)\right)
+#' }{
+#'   -\sum (y_i(x_i^T\beta + \alpha) - exp(x_i^T\beta + \alpha))
+#' }
+#'
+#' **Multinomial**
+#'
+#' In multinomial regression, we minimize the full-rank objective
+#' \deqn{
+#'   -\sum_{i=1}^n\left( \sum_{k=1}^{m-1} y_{ik}(x_i^T\beta_k + \alpha_k)
+#'                      - \log\sum_{k=1}^{m-1} \exp(x_i^T\beta_k + \alpha_k) \right)
+#' }{
+#'   -\sum(y_ik(x_i^T\beta_k + \alpha_k) - log(\sum exp(x_i^T\beta_k + \alpha_k)))
+#' }
+#' with \eqn{y_{ik}} being the element in a \eqn{n} by \eqn{(m-1)} matrix, where
+#' \eqn{m} is the number of classes in the response.
+#'
+#' @section Regularization sequences:
+#' There are multiple ways of specifying the `lambda` sequence
+#' in `SLOPE()`. It is, first of all, possible to select the sequence manually by
+#' using a non-increasing
+#' numeric vector as argument instead of a character.
+#' If all `lambda` are the same value, this will
+#' lead to the ordinary lasso penalty. The greater the differences are between
+#' consecutive values along the sequence, the more clustering behavior
+#' will the model exhibit. Note, also, that the scale of the \eqn{\lambda}
+#' vector makes no difference if `sigma = NULL`, since `sigma` will be
+#' selected automatically to ensure that the model is completely sparse at the
+#' beginning and almost unregularized at the end. If, however, both
+#' `sigma` and `lambda` are manually specified, both of the scales will
+#' matter.
+#'
+#' Instead of choosing the sequence manually, one of the following
+#' automatically generated sequences may be chosen.
+#'
+#' **BH (Benjamini--Hochberg)**
+#'
+#' If `lambda = "bh"`, the sequence used is that referred to
+#' as \eqn{\lambda^{(\mathrm{BH})}}{\lambda^(BH)} by Bogdan et al, which sets
+#' \eqn{\lambda} according to
+#' \deqn{
+#'   \lambda_i = \Phi^{-1}(1 - iq/(2p)),
+#' }{
+#'   \lambda_i = \Phi^-1(1 - iq/(2p)),
+#' }
+#' for \eqn{i=1,\dots,p}, where \eqn{\Phi^{-1}}{\Phi^-1} is the quantile
+#' function for the standard normal distribution and \eqn{q} is a parameter
+#' that can be set by the user in the call to `SLOPE()`.
+#'
+#' **Gaussian**
+#'
+#' This penalty sequence is related to BH, such that
+#' \deqn{
+#'   \lambda_i = \lambda^{(\mathrm{BH})}_i \sqrt{1 + w(i-1)\cdot \mathrm{cumsum}(\lambda^2)_i},
+#' }{
+#'   \lambda_i = \lambda^(BH)_i \sqrt{1 + w(i-1) * cumsum(\lambda^2)_i},
+#' }
+#' for \eqn{i=1,\dots,p}, where \eqn{w(k) = 1/(n-k-1)}. We let
+#' \eqn{\lambda_1 = \lambda^{(\mathrm{BH})}_1}{\lambda_1 = \lambda^(BH)_1} and
+#' adjust the sequence to make sure that it's non-increasing.
+#' Note that if \eqn{p} is large relative
+#' to \eqn{n}, this option will result in a constant sequence, which is
+#' usually not what you would want.
+#'
+#' **OSCAR**
+#'
+#' This sequence comes from Bondell and Reich and is a linearly non-increasing
+#' sequence such that
+#' \deqn{
+#'   \lambda_i = q(p - i) + 1.
+#' }
+#' for \eqn{i = 1,\dots,p}.
+#'
+#' @section Solvers:
+#'
+#' There are currently two solvers available for SLOPE: FISTA (Beck and
+#' Teboulle 2009) and ADMM (Boyd et al. 2008). FISTA is available for
+#' families but ADMM is currently only available for `family = "gaussian"`.
+#'
+#' @param x the design matrix, which can be either a dense
+#'   matrix of the standard *matrix* class, or a sparse matrix
+#'   inheriting from [Matrix::sparseMatrix]. Data frames will
+#'   be converted to matrices internally.
+#' @param y the response, which for `family = "gaussian"` must be numeric; for
+#'   `family = "binomial"` or `family = "multinomial"`, it can be a factor.
+#' @param family model family (objective); see **Families** for details.
+#' @param intercept whether to fit an intercept
+#' @param center whether to center predictors or not by their mean. Defaults
+#'   to `TRUE` if `x` is dense and `FALSE` otherwise.
+#' @param scale type of scaling to apply to predictors; `"l1"` scales
+#'   predictors to have L1-norm of one, `"l2"` scales predictors to have
+#'   L2-norm one, `"sd"` scales predictors to have standard deviation one.
+#' @param sigma regularization path: either a decreasing numeric
+#'   vector or a character vector; in the latter case, the choices are:
+#'   * `sigma = "path"`, which computes a `sigma` sequence
+#'     where the first value corresponds to the intercept-only (null) model, and
+#'   * `sigma = "estimate"`, which estimates a *single* `sigma` using a technique
+#'     outlined in Bogdan et al. (2015).
+#' @param n_sigma length of regularization path
+#' @param lambda either a character vector indicating the method used
+#'   to construct the lambda path or a numeric non-decreasing
+#'   vector with length equal to the number
+#'   of coefficients in the model; see section **Regularization sequences**
+#'   for details.
+#' @param lambda_min_ratio smallest value for `lambda` as a fraction of
+#'   `lambda_max`; used in the selection of `sigma` when `sigma = "path"`.
+#' @param q parameter controlling the shape of the lambda sequence, with
+#'   usage varying depending on the type of path used and has no effect
+#'   is a custom `lambda` sequence is used.
+#' @param max_passes maximum number of passes (outer iterations) for solver
+#' @param diagnostics whether to save diagnostics from the solver
+#'   (timings and other values depending on type of solver)
+#' @param screen whether to use predictor screening rules (rules that allow
+#'   some predictors to be discarded prior to fitting), which improve speed
+#'   greately when the number of predictors is larger than the number
+#'   of observations.
+#' @param screen_alg what type of screening algorithm to use.
+#'   * `"strong"` uses the set from the strong screening rule and check
+#'     against the full set
+#'   * `"previous"` first fits with the previous active set, then checks
+#'     against the strong set, and finally against the full set if there are
+#'     no violations in the strong set
+#' @param verbosity level of verbosity for displaying output from the
+#'   program. Setting this to 1 displays basic information on the path level,
+#'   2 a little bit more information on the path level, and 3 displays
+#'   information from the solver.
+#' @param tol_dev_change the regularization path is stopped if the
+#'   fractional change in deviance falls below this value; note that this is
+#'   automatically set to 0 if a sigma is manually entered
+#' @param tol_dev_ratio the regularization path is stopped if the
+#'   deviance ratio
+#'   \eqn{1 - \mathrm{deviance}/\mathrm{(null-deviance)}}{1 - deviance/(null deviance)}
+#'   is above this threshold
+#' @param max_variables criterion for stopping the path in terms of the
+#'   maximum number of unique, nonzero coefficients in absolute value in model.
+#'   For the multinomial family, this value will be multiplied internally with
+#'   the number of levels of the response minus one.
+#' @param tol_rel_gap stopping criterion for the duality gap; used only with
+#'   FISTA solver.
+#' @param tol_infeas stopping criterion for the level of infeasibility; used
+#'   with FISTA solver and KKT checks in screening algorithm.
+#' @param tol_abs absolute tolerance criterion for ADMM solver
+#' @param tol_rel relative tolerance criterion for ADMM solver
+#' @param X deprecated. please use `x` instead
+#' @param fdr deprecated. please use `q` instead
+#' @param normalize deprecated. please use `scale` and `center` instead
+#' @param solver type of solver use, either `"fista"` or `"admm"`. (`"default"`
+#'   and `"matlab"` are deprecated); all families currently support
+#'   FISTA but only `family = "gaussian"` supports ADMM.
+#'
+#' @return An object of class `"SLOPE"` with the following slots:
+#' \item{coefficients}{
+#'   a three-dimensional array of the coefficients from the
+#'   model fit, including the intercept if it was fit.
+#'   There is one row for each coefficient, one column
+#'   for each target (dependent variable), and
+#'   one slice for each penalty.
+#' }
+#' \item{nonzeros}{
+#'   a three-dimensional logical array indicating whether a
+#'   coefficient was zero or not
+#' }
+#' \item{lambda}{
+#'   the lambda vector that when multiplied by a value in `sigma`
+#'   gives the penalty vector at that point along the regularization
+#'   path
+#' }
+#' \item{sigma}{the vector of sigma, indicating the scale of the lambda vector}
+#' \item{class_names}{
+#'   a character vector giving the names of the classes for binomial and
+#'   multinomial families
+#' }
+#' \item{passes}{the number of passes the solver took at each step on the path}
+#' \item{violations}{
+#'   the number of violations of the screening rule at each step on the path;
+#'   only available if `diagnostics = TRUE` in the call to [SLOPE()].
+#' }
+#' \item{active_sets}{
+#'   a list where each element indicates the indices of the
+#'   coefficients that were active at that point in the regularization path
+#' }
+#' \item{unique}{
+#'   the number of unique predictors (in absolute value)
+#' }
+#' \item{deviance_ratio}{
+#'   the deviance ratio (as a fraction of 1)
+#' }
+#' \item{null_deviance}{
+#'   the deviance of the null (intercept-only) model
+#' }
+#' \item{family}{
+#'   the name of the family used in the model fit
+#' }
+#' \item{diagnostics}{
+#'   a `data.frame` of objective values for the primal and dual problems, as
+#'   well as a measure of the infeasibility, time, and iteration; only
+#'   available if `diagnostics = TRUE` in the call to [SLOPE()].
+#' }
+#' \item{call}{the call used for fitting the model}
 #' @export
-SLOPE <- function(X, y, fdr = 0.20, lambda = 'gaussian', sigma = NULL,
-                  normalize = TRUE, solver = c('default','matlab'), ...) {
-  # Validate input types.
-  if (is.data.frame(X)) {
-    X.names = names(X)
-    X = as.matrix(X, rownames.force = F)
-  } else if (is.matrix(X))
-    X.names = colnames(X)
-  else
-    stop('Input X must be a matrix or data frame')
-  n = nrow(X); p = ncol(X)
-  y = as.numeric(y)
+#'
+#' @seealso [plot.SLOPE()], [plotDiagnostics()], [score()], [predict.SLOPE()],
+#'   [trainSLOPE()], [coef.SLOPE()], [print.SLOPE()]
+#'
+#' @references
+#' Bogdan, M., van den Berg, E., Sabatti, C., Su, W., & Candès, E. J. (2015).
+#' SLOPE -- adaptive variable selection via convex optimization. The Annals of
+#' Applied Statistics, 9(3), 1103–1140. <https://doi.org/10/gfgwzt>
+#'
+#' Bondell, H. D., & Reich, B. J. (2008). Simultaneous Regression Shrinkage,
+#' Variable Selection, and Supervised Clustering of Predictors with OSCAR.
+#' Biometrics, 64(1), 115–123. JSTOR.
+#' <https://doi.org/10.1111/j.1541-0420.2007.00843.x>
+#'
+#' Boyd, S., Parikh, N., Chu, E., Peleato, B., & Eckstein, J. (2010).
+#' Distributed Optimization and Statistical Learning via the Alternating
+#' Direction Method of Multipliers. Foundations and Trends® in Machine Learning,
+#' 3(1), 1–122. <https://doi.org/10.1561/2200000016>
+#'
+#' Beck, A., & Teboulle, M. (2009). A Fast Iterative Shrinkage-Thresholding
+#' Algorithm for Linear Inverse Problems. SIAM Journal on Imaging Sciences,
+#' 2(1), 183–202. <https://doi.org/10.1137/080716542>
+#'
+#' @examples
+#'
+#' # Gaussian response, default lambda sequence
+#' fit <- SLOPE(bodyfat$x, bodyfat$y)
+#'
+#' # Poisson response, OSCAR-type lambda sequence
+#' fit <- SLOPE(abalone$x,
+#'              abalone$y,
+#'              family = "poisson",
+#'              lambda = "oscar",
+#'              q = 0.4)
+#'
+#' # Multinomial response, custom sigma and lambda
+#' m <- length(unique(wine$y)) - 1
+#' p <- ncol(wine$x)
+#'
+#' sigma <- 0.005
+#' lambda <- exp(seq(log(2), log(1.8), length.out = p*m))
+#'
+#' fit <- SLOPE(wine$x,
+#'              wine$y,
+#'              family = "multinomial",
+#'              lambda = lambda,
+#'              sigma = sigma)
+#'
+SLOPE <- function(x,
+                  y,
+                  family = c("gaussian", "binomial", "multinomial", "poisson"),
+                  intercept = TRUE,
+                  center = !inherits(x, "sparseMatrix"),
+                  scale = c("l2", "l1", "sd", "none"),
+                  sigma = c("path", "estimate"),
+                  lambda = c("gaussian", "bh", "oscar", "bhq"),
+                  lambda_min_ratio = if (NROW(x) < NCOL(x)) 1e-2 else 1e-4,
+                  n_sigma = if (sigma[1] == "estimate") 1 else 100,
+                  q = 0.1*min(1, NROW(x)/NCOL(x)),
+                  screen = TRUE,
+                  screen_alg = c("strong", "previous"),
+                  tol_dev_change = 1e-5,
+                  tol_dev_ratio = 0.995,
+                  max_variables = NROW(x),
+                  solver = c("fista", "admm", "matlab", "default"),
+                  max_passes = 1e6,
+                  tol_abs = 1e-5,
+                  tol_rel = 1e-4,
+                  tol_rel_gap = 1e-5,
+                  tol_infeas = 1e-3,
+                  diagnostics = FALSE,
+                  verbosity = 0,
+                  X,
+                  fdr,
+                  normalize
+) {
 
-  # Normalize input, if necessary.
-  if (normalize) {
-    X = normalize(X)
-    y = y - mean(y)
+  if (!missing(X)) {
+    x <- X
+    warning("'X' argument is deprecated; please use 'x' instead")
   }
 
-  # Create lambda sequence.
-  if (is.character(lambda)) {
-    lambda_method = lambda
-    lambda = create_lambda(n, p, fdr, lambda)
+  if (!missing(fdr)) {
+    warning("'fdr' argument is deprecated; please use 'q' instead")
+    q <- fdr
+  }
+
+  if (!missing(normalize)) {
+    warning("'normalize' argument is deprecated; please use 'scale' and",
+            "'center' instead. 'scale' has been set to 'l2', and",
+            "'center' to TRUE")
+    center <- TRUE
+    scale <- "l2"
+  }
+
+  ocall <- match.call()
+
+  family <- match.arg(family)
+  solver <- match.arg(solver)
+  screen_alg <- match.arg(screen_alg)
+
+  if (solver %in% c("default", "matlab"))
+    warning("`solver = '", solver, "'` is deprecated; ",
+            "using `solver = 'fista'` instead")
+
+  if (solver == "admm" && family != "gaussian")
+    stop("ADMM solver is only supported with `family = 'gaussian'`")
+
+  if (is.character(scale)) {
+    scale <- match.arg(scale)
+  } else if (is.logical(scale) && length(scale) == 1L) {
+    scale <- ifelse(scale, "l2", "none")
   } else {
-    lambda_method = 'user'
-    lambda = as.numeric(lambda)
+    stop("`scale` must be logical or a character")
   }
 
-  # Validate input constraints.
-  stopifnot(length(y) == n, length(lambda) == p)
-  if (is.unsorted(rev(lambda)))
-    stop('Lambda sequence must be non-increasing');
+  n <- NROW(x)
+  p <- NCOL(x)
 
-  # Estimate the noise level, if possible.
-  if (is.null(sigma) && n >= p + 30)
-     sigma = estimate_noise(X, y)
+  stopifnot(
+    is.null(lambda_min_ratio) ||
+      (lambda_min_ratio > 0 && lambda_min_ratio < 1),
+    max_passes > 0,
+    q > 0,
+    q < 1,
+    length(n_sigma) == 1,
+    n_sigma >= 1,
+    is.null(lambda) || is.character(lambda) || is.numeric(lambda),
+    is.finite(max_passes),
+    is.logical(diagnostics),
+    is.logical(intercept),
+    tol_rel_gap >= 0,
+    tol_infeas >= 0,
+    tol_abs >= 0,
+    tol_rel >= 0,
+    is.logical(center)
+  )
 
-  # Run the solver, iteratively if necessary.
-  if (is.null(sigma)) {
-    # Run Algorithm 5 of Section 3.2.3.
-    selected = NULL
-    repeat {
-      selected.prev = selected
-      sigma = c(sigma, estimate_noise(X[,selected,drop=F], y))
-      result = SLOPE_solver_call(solver, X, y, tail(sigma,1) * lambda)
-      selected = result$selected
-      if (identical(selected, selected.prev))
-        break
-      if (length(selected)+1 >= n)
-        stop('Selected >= n-1 variables. Cannot estimate variance.')
+  fit_intercept <- intercept
+
+  # convert sparse x to dgCMatrix class from package Matrix.
+  is_sparse <- inherits(x, "sparseMatrix")
+
+  if (NROW(y) != NROW(x))
+    stop("the number of samples in `x` and `y` must match")
+
+  if (NROW(y) == 0)
+    stop("`y` is empty")
+
+  if (NROW(x) == 0)
+    stop("`x` is empty")
+
+  if (anyNA(y) || anyNA(x))
+    stop("missing values are not allowed")
+
+  if (is_sparse) {
+    x <- methods::as(x, "dgCMatrix")
+  } else {
+    x <- as.matrix(x)
+  }
+
+  if (is_sparse && center)
+    stop("centering would destroy sparsity in `x` (predictor matrix)")
+
+  res <- preprocessResponse(family, y)
+  y <- as.matrix(res$y)
+  y_center <- res$y_center
+  y_scale <- res$y_scale
+  class_names <- res$class_names
+  m <- n_targets <- res$n_targets
+  response_names <- res$response_names
+  variable_names <- colnames(x)
+  max_variables <- max_variables*m
+
+  if (is.null(variable_names))
+    variable_names <- paste0("V", seq_len(p))
+  if (is.null(response_names))
+    response_names <- paste0("y", seq_len(m))
+
+  if (is.character(sigma)) {
+    sigma <- match.arg(sigma)
+
+    if (sigma == "path") {
+
+      sigma_type <- "auto"
+      sigma <- double(n_sigma)
+
+    } else if (sigma == "estimate") {
+
+      if (family != "gaussian")
+        stop("`sigma = 'estimate'` can only be used if `family = 'gaussian'`")
+
+      sigma_type <- "estimate"
+      sigma <- NULL
+
+      if (n_sigma > 1)
+        warning("`n_sigma` ignored since `sigma = 'estimate'`")
     }
   } else {
-    result = SLOPE_solver_call(solver, X, y, sigma * lambda)
+    sigma <- as.double(sigma)
+    sigma_type <- "user"
+
+    sigma <- as.double(sigma)
+    n_sigma <- length(sigma)
+
+    stopifnot(n_sigma > 0)
+
+    if (any(sigma < 0))
+      stop("`sigma` cannot contain negative values")
+
+    if (is.unsorted(rev(sigma)))
+      stop("`sigma` must be decreasing")
+
+    if (anyDuplicated(sigma) > 0)
+      stop("all values in `sigma` must be unique")
+
+    # do not stop path early if user requests specific sigma
+    tol_dev_change <- 0
+    tol_dev_ratio <- 1
+    max_variables <- (NCOL(x) + intercept)*m
   }
 
-  # Package up the results.
-  beta = result$beta
-  selected = result$selected
-  if (!is.null(X.names))
-    names(selected) = X.names[selected]
+  n_lambda <- m*p
 
-  structure(list(call = match.call(),
-                 lambda = lambda,
-                 lambda_method = lambda_method,
-                 sigma = sigma,
-                 beta = beta,
-                 selected = selected),
-            class = 'SLOPE.result')
-}
+  if (is.character(lambda)) {
 
-# Helper function for invoking the SLOPE solver.
-SLOPE_solver_call <- function(solver = c('default','matlab'), ...) {
-  solver_name = match.arg(solver)
-  if (solver_name == 'default') {
-    result = SLOPE_solver(...)
-    beta = result$x
-    tol = 0 # Our solver sets un-selected beta's to *exactly* zero.
-  } else if (solver_name == 'matlab') {
-    beta = SLOPE_solver_matlab(...)
-    tol = 1e-5 # FIXME: How to choose this?
-  }
-  selected = which(abs(beta) > tol)
-  list(beta = beta, selected = selected)
-}
+    lambda_type <- match.arg(lambda)
 
-# Print method for SLOPE results.
-#' @export
-#' @keywords internal
-print.SLOPE.result <- function(x, ...) {
-  result = x
-  cat("\nCall:\n", paste(deparse(result$call), sep = "\n", collapse = "\n"),
-      "\n\n", sep = "")
-  selected = result$selected
-  if (length(selected)) {
-    beta.selected <- result$beta[selected]
-    if (is.null(names(selected)))
-      names(beta.selected) <- as.character(selected)
-    else
-      names(beta.selected) <- names(selected)
-    cat("Selected", length(beta.selected), "variables with coefficients:\n")
-    print.default(beta.selected, print.gap = 2L, quote = FALSE)
+    if (lambda_type == "bhq")
+      warning("'bhq' option to argument lambda has been depracted and will",
+              "will be defunct in the next release; please use 'bh' instead")
+
+    lambda <- double(n_lambda)
+
   } else {
-    cat("No selected variables\n")
+
+    lambda_type <- "user"
+    lambda <- as.double(lambda)
+
+    if (length(lambda) != m*p)
+      stop("`lambda` must be as long as there are variables")
+
+    if (is.unsorted(rev(lambda)))
+      stop("`lambda` must be non-increasing")
+
+    if (any(lambda < 0))
+      stop("`lambda` cannot contain negative values")
   }
-  cat("\n")
-  invisible(result)
+
+  control <- list(family = family,
+                  fit_intercept = fit_intercept,
+                  is_sparse = is_sparse,
+                  scale = scale,
+                  center = center,
+                  n_sigma = n_sigma,
+                  n_targets = n_targets,
+                  screen = screen,
+                  screen_alg = screen_alg,
+                  sigma = sigma,
+                  sigma_type = sigma_type,
+                  lambda = lambda,
+                  lambda_type = lambda_type,
+                  lambda_min_ratio = lambda_min_ratio,
+                  q = q,
+                  y_center = y_center,
+                  y_scale = y_scale,
+                  max_passes = max_passes,
+                  diagnostics = diagnostics,
+                  verbosity = verbosity,
+                  max_variables = max_variables,
+                  solver = solver,
+                  tol_dev_change = tol_dev_change,
+                  tol_dev_ratio = tol_dev_ratio,
+                  tol_rel_gap = tol_rel_gap,
+                  tol_infeas = tol_infeas,
+                  tol_abs = tol_abs,
+                  tol_rel = tol_rel)
+
+  fitSLOPE <- if (is_sparse) sparseSLOPE else denseSLOPE
+
+  if (intercept) {
+    x <- cbind(1, x)
+  }
+
+  if (sigma_type %in% c("path", "user")) {
+    fit <- fitSLOPE(x, y, control)
+  } else {
+    # estimate the noise level, if possible
+    if (is.null(sigma) && n >= p + 30)
+      sigma <- estimateNoise(x, y)
+
+    # run the solver, iteratively if necessary.
+    if (is.null(sigma)) {
+      # Run Algorithm 5 of Section 3.2.3. (Bogdan et al.)
+      if (intercept)
+        selected <- 1
+      else
+        selected <- integer(0)
+
+      repeat {
+        selected_prev <- selected
+
+        sigma <- estimateNoise(x[, selected, drop = FALSE], y, intercept)
+        control$sigma <- sigma
+
+        fit <- fitSLOPE(x, y, control)
+
+        selected <- which(abs(drop(fit$betas)) > 0)
+
+        if (fit_intercept)
+          selected <- union(1, selected)
+
+        if (identical(selected, selected_prev))
+          break
+
+        if (length(selected) + 1 >= n)
+          stop("selected >= n-1 variables; cannot estimate variance")
+      }
+    } else {
+      control$sigma <- sigma
+      fit <- fitSLOPE(x, y, control)
+    }
+  }
+
+  lambda <- fit$lambda
+  sigma <- fit$sigma
+  n_sigma <- length(sigma)
+  active_sets <- lapply(drop(fit$active_sets), function(x) drop(x) + 1)
+  beta <- fit$betas
+  nonzeros <- apply(beta, c(2, 3), function(x) abs(x) > 0)
+  coefficients <- beta
+
+  if (fit_intercept) {
+    nonzeros <- nonzeros[-1, , , drop = FALSE]
+    dimnames(coefficients) <- list(c("(Intercept)", variable_names),
+                                   response_names[1:n_targets],
+                                   paste0("p", seq_len(n_sigma)))
+  } else {
+    dimnames(coefficients) <- list(variable_names,
+                                   response_names[1:n_targets],
+                                   paste0("p", seq_len(n_sigma)))
+  }
+
+  diagnostics <- if (diagnostics) setupDiagnostics(fit) else NULL
+
+  slope_class <- switch(family,
+                        gaussian = "GaussianSLOPE",
+                        binomial = "BinomialSLOPE",
+                        poisson = "PoissonSLOPE",
+                        multinomial = "MultinomialSLOPE")
+
+  structure(list(coefficients = coefficients,
+                 nonzeros = nonzeros,
+                 lambda = lambda,
+                 sigma = sigma,
+                 class_names = class_names,
+                 passes = fit$passes,
+                 violations = fit$violations,
+                 active_sets = active_sets,
+                 unique = drop(fit$n_unique),
+                 deviance_ratio = drop(fit$deviance_ratio),
+                 null_deviance = fit$null_deviance,
+                 family = family,
+                 diagnostics = diagnostics,
+                 call = ocall),
+            class = c(slope_class, "SLOPE"))
 }
