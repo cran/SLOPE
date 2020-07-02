@@ -43,8 +43,8 @@ set.seed(1)
 for (i in seq_along(q)) {
   n <- 1000
   p <- n/2
-  sigma <- 1
-  problem <- SLOPE:::randomProblem(n, p, q = q[i], sigma = sigma)
+  alpha <- 1
+  problem <- SLOPE:::randomProblem(n, p, q = q[i], alpha = alpha)
   
   x <- problem$x
   y <- problem$y
@@ -55,7 +55,7 @@ for (i in seq_along(q)) {
                lambda = "gaussian",
                solver = "admm",
                q = 0.1,
-               sigma = sigma)
+               alpha = alpha/sqrt(n))
   
   selected_slope <- which(fit$nonzeros)
   V <- length(setdiff(selected_slope, signals))

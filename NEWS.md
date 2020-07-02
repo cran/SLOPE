@@ -1,3 +1,43 @@
+# SLOPE 0.3.0
+
+## Major changes
+
+* Scaling of `alpha` (previously `sigma`) is now invariant to the 
+  number of observations, which is achieved by scaling
+  the penalty part of the objective by the square root of the number of
+  observations if `scale = "l2"` and the number of observations if 
+  `scale = "sd"` or `"none"`. No scaling is applied when `scale = "l1"`.
+* The `sigma` argument is deprecated in favor of `alpha` in `SLOPE()`, 
+  `coef.SLOPE()`, and `predict.SLOPE()`.
+* The `n_sigma` argument is deprecated in favor of `path_length` in `SLOPE()`
+* The `lambda_min_ratio` argument is deprecated in favor of `alpha_min_ratio` in
+  `SLOPE()`
+* The default for argument `lambda` in `SLOPE()` has changed from `"gaussian"` 
+  to `"bh"`.
+* Functions and arguments deprecated in 0.2.0 are now defunct and have
+  been removed from the package.
+* `scale = "sd"` now scales with the population standard deviation rather
+  than the sample standard deviation, i.e. the scaling factor now used
+  is the number of observations (and not the number of observations minus one
+  as before).
+
+## Minor changes
+
+* Default `path_length` has changed from 100 to 20.
+* `plot.SLOPE()` has gained an argument `x_variable` that controls what is
+  plotted on the x axis.
+* A warning is now thrown if the maximum number of passes was reached
+  anywhere along the path (and prints where as well).
+* If the `max_variables` criterion is hit, the solution path returned
+  will now include also the last solution (which was not the case
+  before). Thanks, @straw-boy.
+  
+## Bug fixes
+
+* Plotting models that are completely sparse no longer throws an error.
+* `rho` instead of `1` is now used in the factorization part for
+  the ADMM solver.
+
 # SLOPE 0.2.1
 
 ## Minor changes
