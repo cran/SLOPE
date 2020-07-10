@@ -26,7 +26,7 @@ test_that("output from unregularized poisson model matches glm", {
 
 })
 
-test_that("SLOPE reproduces lasoso fit when all lambda are equal", {
+test_that("SLOPE reproduces lasso fit when all lambda are equal", {
 
   set.seed(0978213)
 
@@ -39,11 +39,14 @@ test_that("SLOPE reproduces lasoso fit when all lambda are equal", {
   n <- nrow(x)
   p <- ncol(x)
 
-  library(glmnet)
-
   alpha <- 1
 
-  gnt_fit <- glmnet(x, y, family = "poisson", lambda = alpha, standardize = FALSE)
+  gnt_fit <- glmnet::glmnet(x, y,
+                            family = "poisson",
+                            lambda = alpha,
+                            standardize = FALSE)
+  gnt_coef <- as.vector(coef(gnt_fit))
+
   SLOPE_fit <- SLOPE(x, y,
                      family = "poisson",
                      alpha = alpha,
@@ -51,5 +54,5 @@ test_that("SLOPE reproduces lasoso fit when all lambda are equal", {
                      scale = "none",
                      center = FALSE)
 
-  expect_equivalent(as.double(coef(gnt_fit)), coef(SLOPE_fit), tol = 1e-3)
+  expect_equivalent(gnt_coef, coef(SLOPE_fit), tol = 1e-3)
 })

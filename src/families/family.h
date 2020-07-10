@@ -18,6 +18,7 @@ protected:
   const double tol_infeas;
   const double tol_abs;
   const double tol_rel;
+  const double tol_rel_coef_change;
   const uword verbosity;
 
 public:
@@ -28,6 +29,7 @@ public:
          const double tol_infeas,
          const double tol_abs,
          const double tol_rel,
+         const double tol_rel_coef_change,
          const uword verbosity)
     : intercept(intercept),
       diagnostics(diagnostics),
@@ -36,6 +38,7 @@ public:
       tol_infeas(tol_infeas),
       tol_abs(tol_abs),
       tol_rel(tol_rel),
+      tol_rel_coef_change(tol_rel_coef_change),
       verbosity(verbosity) {}
 
   virtual double primal(const mat& y, const mat& lin_pred) = 0;
@@ -74,7 +77,6 @@ public:
       return FISTA(x, y, beta, lambda);
   }
 
-
   // FISTA implementation
   template <typename T>
   Results FISTAImpl(const T& x,
@@ -90,6 +92,7 @@ public:
 
     mat beta_tilde(beta);
     mat beta_tilde_old(beta);
+    mat beta_prev(beta);
 
     mat lin_pred(n, m);
     mat grad(p, m, fill::zeros);
@@ -121,14 +124,28 @@ public:
       lin_pred = x*beta;
 
       double g = primal(y, lin_pred);
-      double h = dot(sort(abs(vectorise(beta.tail_rows(p_rows))),
-                          "descending"), lambda);
+
+      mat tmp = beta;
+
+      if (intercept)
+        tmp.shed_row(0);
+
+      vec tmp_vectorized = sort(abs(vectorise(tmp)), "descending");
+
+      double h = dot(tmp_vectorized, lambda);
       double f = g + h;
       double G = dual(y, lin_pred);
 
       grad = gradient(x, y, lin_pred);
+      tmp = grad;
+
+      if (intercept)
+        tmp.shed_row(0);
+
+      tmp_vectorized = vectorise(tmp);
+
       double infeas =
-        lambda.n_elem > 0 ? infeasibility(grad.tail_rows(p_rows), lambda) : 0.0;
+        lambda.n_elem > 0.0 ? infeasibility(tmp_vectorized, lambda) : 0.0;
 
       if (verbosity >= 3) {
         Rcout << "pass: "            << passes
@@ -143,8 +160,19 @@ public:
         (std::abs(f - G)/std::max(small, std::abs(f)) < tol_rel_gap);
 
       bool feasible =
-        lambda.n_elem > 0 ? infeas <= std::max(small, tol_infeas*lambda(0))
-                          : true;
+        lambda.n_elem > 0.0 ? infeas <= std::max(small, tol_infeas*lambda(0))
+                            : true;
+
+      // check change in coefficients
+      double max_change = abs(vectorise(beta - beta_prev)).max();
+      double max_size = abs(vectorise(beta)).max();
+
+      bool all_zero  =
+        (max_size == 0.0) && (max_change == 0.0);
+      bool small_change =
+        (max_size != 0.0) && (max_change/max_size <= tol_rel_coef_change);
+
+      bool small_coef_change = all_zero || small_change;
 
       if (diagnostics) {
         time.push_back(timer.toc());
@@ -152,7 +180,7 @@ public:
         duals.push_back(G);
       }
 
-      if (optimal && feasible)
+      if (optimal && feasible && passes > 0 && small_coef_change)
         break;
 
       beta_tilde_old = beta_tilde;
@@ -165,8 +193,13 @@ public:
         // Update coefficients
         beta_tilde = beta - learning_rate*grad;
 
-        beta_tilde.tail_rows(p_rows) =
-          prox(beta_tilde.tail_rows(p_rows), lambda*learning_rate);
+        if (intercept) {
+          mat tmp = beta_tilde;
+          tmp.shed_row(0);
+          beta_tilde.tail_rows(p_rows) = prox(tmp, lambda*learning_rate);
+        } else {
+          beta_tilde = prox(beta_tilde, lambda*learning_rate);
+        }
 
         vec d = vectorise(beta_tilde - beta);
 
@@ -190,6 +223,8 @@ public:
       // FISTA step
       t = 0.5*(1.0 + std::sqrt(1.0 + 4.0*t_old*t_old));
       beta = beta_tilde + (t_old - 1.0)/t * (beta_tilde - beta_tilde_old);
+
+      beta_prev = beta;
 
       if (passes % 100 == 0)
         checkUserInterrupt();

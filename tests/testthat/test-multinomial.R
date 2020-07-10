@@ -1,7 +1,6 @@
 test_that("glmnet and SLOPE return same unpenalized model", {
-  library(glmnet)
 
-  set.seed(-329)
+  set.seed(129)
 
   n <- 100
   x1 <- rnorm(n)
@@ -17,9 +16,10 @@ test_that("glmnet and SLOPE return same unpenalized model", {
   for (i in 1:n)
     y[i] <- sample(3, 1, replace = TRUE, prob = prob[i, ])
 
-  x <- scale(cbind(x1, x2), scale = c(norm(x1, "2"), norm(x2, "2")))
+  x <- scale(cbind(x1, x2))
   y <- factor(y)
 
+  library(glmnet)
   fit <- glmnet(x, y, family = "multinomial", lambda = 0, thresh = 1e-10,
                 standardize = FALSE)
   g_coef <- as.matrix(do.call(cbind, coef(fit)))

@@ -1,3 +1,28 @@
+# SLOPE 0.3.2
+
+## Minor changes
+
+* Added `tol_rel_coef_change` argument to `SLOPE()` as a convergence
+  criterion for the FISTA solver that sets a tolerance for the relative
+  change in coefficients across iterations.
+
+## Bug fixes
+
+* Fixed premature stopping of the solver for the first step of the
+  regularization path (the null model).
+* Actually fix UBSAN/ASAN sanitizer warnings by modifying code for
+  FISTA solver.
+
+# SLOPE 0.3.1
+
+## Bug fixes
+
+* Fixed package build breaking on solaris because of missing STL namespace
+  specifier for `std::sqrt()` in `src/SLOPE.cpp`.
+* Fixed erroneous scaling of absolute tolerance in stopping criteria for
+  the ADMM solvers. Thanks, @straw-boy.
+* Fixed sanitizer warning from CRAN checks.
+
 # SLOPE 0.3.0
 
 ## Major changes
