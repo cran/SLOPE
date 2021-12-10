@@ -12,10 +12,13 @@ SLOPE(
   center = !inherits(x, "sparseMatrix"),
   scale = c("l2", "l1", "sd", "none"),
   alpha = c("path", "estimate"),
-  lambda = c("bh", "gaussian", "oscar"),
+  lambda = c("bh", "gaussian", "oscar", "lasso"),
   alpha_min_ratio = if (NROW(x) < NCOL(x)) 0.01 else 1e-04,
   path_length = if (alpha[1] == "estimate") 1 else 20,
   q = 0.1 * min(1, NROW(x)/NCOL(x)),
+  theta1 = 1,
+  theta2 = 0.5,
+  prox_method = c("stack", "pava"),
   screen = TRUE,
   screen_alg = c("strong", "previous"),
   tol_dev_change = 1e-05,
@@ -92,7 +95,22 @@ given by \code{tol_dev_change}, \code{tol_dev_ratio}, and \code{max_variables}.}
 
 \item{q}{parameter controlling the shape of the lambda sequence, with
 usage varying depending on the type of path used and has no effect
-is a custom \code{lambda} sequence is used.}
+is a custom \code{lambda} sequence is used. Must be greater than \code{1e-6} and
+smaller than 1.}
+
+\item{theta1}{parameter controlling the shape of the lambda sequence
+when \code{lambda == "OSCAR"}. This parameter basically sets the intercept
+for the lambda sequence and is equivalent to \eqn{\lambda_1} in the
+original OSCAR formulation.}
+
+\item{theta2}{parameter controlling the shape of the lambda sequence
+when \code{lambda == "OSCAR"}. This parameter basically sets the slope
+for the lambda sequence and is equivalent to \eqn{\lambda_2} in the
+original OSCAR formulation.}
+
+\item{prox_method}{method for calculating the proximal operator for
+the Sorted L1 Norm (the SLOPE penalty). Please see \code{\link[=sortedL1Prox]{sortedL1Prox()}} for
+more information.}
 
 \item{screen}{whether to use predictor screening rules (rules that allow
 some predictors to be discarded prior to fitting), which improve speed
@@ -113,9 +131,8 @@ fractional change in deviance falls below this value; note that this is
 automatically set to 0 if a alpha is manually entered}
 
 \item{tol_dev_ratio}{the regularization path is stopped if the
-deviance ratio
-\eqn{1 - \mathrm{deviance}/\mathrm{(null-deviance)}}{1 - deviance/(null deviance)}
-is above this threshold}
+deviance ratio \eqn{1 - \mathrm{deviance}/\mathrm{(null-deviance)}
+  }{1 - deviance/(null deviance)} is above this threshold}
 
 \item{max_variables}{criterion for stopping the path in terms of the
 maximum number of unique, nonzero coefficients in absolute value in model.
@@ -259,7 +276,8 @@ objective:
 
 The binomial model (logistic regression) has the following objective:
 \deqn{
-  \sum_{i=1}^n \log\left(1+ \exp\left(- y_i \left(x_i^T\beta + \beta_0 \right) \right) \right)
+  \sum_{i=1}^n \log\left(1+ \exp\left(
+    - y_i \left(x_i^T\beta + \beta_0 \right) \right) \right)
 }{
   \sum log(1+ exp(- y_i x_i^T \beta))
 }
@@ -270,7 +288,9 @@ with \eqn{y \in \{-1, 1\}}{y in {-1, 1}}.
 In poisson regression, we use the following objective:
 
 \deqn{
-  -\sum_{i=1}^n \left(y_i\left(x_i^T\beta + \beta_0\right) - \exp\left(x_i^T\beta + \beta_0\right)\right)
+  -\sum_{i=1}^n \left(y_i\left(
+    x_i^T\beta + \beta_0\right) - \exp\left(x_i^T\beta + \beta_0
+  \right)\right)
 }{
   -\sum (y_i(x_i^T\beta + \beta_0) - exp(x_i^T\beta + \beta_0))
 }
@@ -279,30 +299,33 @@ In poisson regression, we use the following objective:
 
 In multinomial regression, we minimize the full-rank objective
 \deqn{
-  -\sum_{i=1}^n\left( \sum_{k=1}^{m-1} y_{ik}(x_i^T\beta_k + \beta_{0,k})
-                     - \log\sum_{k=1}^{m-1} \exp\big(x_i^T\beta_k + \beta_{0,k}\big) \right)
+  -\sum_{i=1}^n\left(
+    \sum_{k=1}^{m-1} y_{ik}(x_i^T\beta_k + \beta_{0,k})
+    - \log\sum_{k=1}^{m-1} \exp\big(x_i^T\beta_k + \beta_{0,k}\big)
+  \right)
 }{
-  -\sum(y_ik(x_i^T\beta_k + \beta_{0,k}) - log(\sum exp(x_i^T\beta_k + \alpha_{0,k})))
+  -\sum(y_ik(x_i^T\beta_k + \beta_{0,k})
+  - log(\sum exp(x_i^T\beta_k + \alpha_{0,k})))
 }
 with \eqn{y_{ik}} being the element in a \eqn{n} by \eqn{(m-1)} matrix, where
 \eqn{m} is the number of classes in the response.
 }
 
-\section{Regularization sequences}{
+\section{Regularization Sequences}{
 
 There are multiple ways of specifying the \code{lambda} sequence
-in \code{SLOPE()}. It is, first of all, possible to select the sequence manually by
+in \code{SLOPE()}. It is, first of all, possible to select the sequence manually
+by
 using a non-increasing
-numeric vector, possible of length one, as argument instead of a character.
-If all \code{lambda} are the same value, this will
-lead to the ordinary lasso penalty. The greater the differences are between
+numeric vector, possibly of length one, as argument instead of a character.
+The greater the differences are between
 consecutive values along the sequence, the more clustering behavior
 will the model exhibit. Note, also, that the scale of the \eqn{\lambda}
 vector makes no difference if \code{alpha = NULL}, since \code{alpha} will be
 selected automatically to ensure that the model is completely sparse at the
 beginning and almost unregularized at the end. If, however, both
-\code{alpha} and \code{lambda} are manually specified, both of the scales will
-matter.
+\code{alpha} and \code{lambda} are manually specified, then the scales of both do
+matter, so make sure to choose them wisely.
 
 Instead of choosing the sequence manually, one of the following
 automatically generated sequences may be chosen.
@@ -325,7 +348,8 @@ that can be set by the user in the call to \code{SLOPE()}.
 
 This penalty sequence is related to BH, such that
 \deqn{
-  \lambda_i = \lambda^{(\mathrm{BH})}_i \sqrt{1 + w(i-1)\cdot \mathrm{cumsum}(\lambda^2)_i},
+  \lambda_i = \lambda^{(\mathrm{BH})}_i
+  \sqrt{1 + w(i-1)\cdot \mathrm{cumsum}(\lambda^2)_i},
 }{
   \lambda_i = \lambda^(BH)_i \sqrt{1 + w(i-1) * cumsum(\lambda^2)_i},
 }
@@ -338,12 +362,29 @@ usually not what you would want.
 
 \strong{OSCAR}
 
-This sequence comes from Bondell and Reich and is a linearly non-increasing
-sequence such that
+This sequence comes from Bondell and Reich and is a linear non-increasing
+sequence, such that
 \deqn{
-  \lambda_i = q(p - i) + 1.
+  \lambda_i = \theta_1 + (p - i)\theta_2.
 }
-for \eqn{i = 1,\dots,p}.
+for \eqn{i = 1,\dots,p}. We use the parametrization from Zhong and Kwok
+(2021) but use \eqn{\theta_1} and \eqn{\theta_2} instead of \eqn{\lambda_1}
+and \eqn{\lambda_2} to avoid confusion and abuse of notation.
+
+\strong{lasso}
+
+SLOPE is exactly equivalent to the
+lasso when the sequence of regularization weights is constant, i.e.
+\deqn{
+  \lambda_i = 1
+}
+for \eqn{i = 1,\dots,p}. Here, again, we stress that the fact that
+all \eqn{\lambda} are equal to one does not matter as long as
+\code{alpha == NULL} since we scale the vector automatically.
+Note that this option is only here for academic interest and
+to highlight the fact that SLOPE is
+a generalization of the lasso. There are more efficient packages, such as
+\strong{glmnet} and \strong{biglasso}, for fitting the lasso.
 }
 
 \section{Solvers}{
@@ -360,25 +401,29 @@ families but ADMM is currently only available for \code{family = "gaussian"}.
 fit <- SLOPE(bodyfat$x, bodyfat$y)
 
 # Poisson response, OSCAR-type lambda sequence
-fit <- SLOPE(abalone$x,
-             abalone$y,
-             family = "poisson",
-             lambda = "oscar",
-             q = 0.4)
+fit <- SLOPE(
+  abalone$x,
+  abalone$y,
+  family = "poisson",
+  lambda = "oscar",
+  theta1 = 1,
+  theta2 = 0.9
+)
 
 # Multinomial response, custom alpha and lambda
 m <- length(unique(wine$y)) - 1
 p <- ncol(wine$x)
 
 alpha <- 0.005
-lambda <- exp(seq(log(2), log(1.8), length.out = p*m))
+lambda <- exp(seq(log(2), log(1.8), length.out = p * m))
 
-fit <- SLOPE(wine$x,
-             wine$y,
-             family = "multinomial",
-             lambda = lambda,
-             alpha = alpha)
-
+fit <- SLOPE(
+  wine$x,
+  wine$y,
+  family = "multinomial",
+  lambda = lambda,
+  alpha = alpha
+)
 }
 \references{
 Bogdan, M., van den Berg, E., Sabatti, C., Su, W., & Candès, E. J. (2015).
@@ -402,5 +447,5 @@ Algorithm for Linear Inverse Problems. SIAM Journal on Imaging Sciences,
 \seealso{
 \code{\link[=plot.SLOPE]{plot.SLOPE()}}, \code{\link[=plotDiagnostics]{plotDiagnostics()}}, \code{\link[=score]{score()}}, \code{\link[=predict.SLOPE]{predict.SLOPE()}},
 \code{\link[=trainSLOPE]{trainSLOPE()}}, \code{\link[=coef.SLOPE]{coef.SLOPE()}}, \code{\link[=print.SLOPE]{print.SLOPE()}}, \code{\link[=print.SLOPE]{print.SLOPE()}},
-\code{\link[=deviance.SLOPE]{deviance.SLOPE()}}
+\code{\link[=deviance.SLOPE]{deviance.SLOPE()}}, \code{\link[=sortedL1Prox]{sortedL1Prox()}}
 }

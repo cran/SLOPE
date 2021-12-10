@@ -21,12 +21,14 @@ set.seed(924)
 x <- bodyfat$x
 y <- bodyfat$y
 
-tune <- trainSLOPE(x,
-                   y,
-                   q = c(0.1, 0.2),
-                   number = 5,
-                   solver = "admm",
-                   repeats = 2)
+tune <- trainSLOPE(
+  x,
+  y,
+  q = c(0.1, 0.2),
+  number = 5,
+  solver = "admm",
+  repeats = 2
+)
 
 ## ---- fig.cap = "Model tuning results from Gaussian SLOPE on the bodyfat dataset.", fig.width = 5.5, fig.height = 3----
 plot(tune, measure = "mae") # plot mean absolute error
@@ -42,31 +44,34 @@ set.seed(1)
 
 for (i in seq_along(q)) {
   n <- 1000
-  p <- n/2
+  p <- n / 2
   alpha <- 1
   problem <- SLOPE:::randomProblem(n, p, q = q[i], alpha = alpha)
-  
+
   x <- problem$x
   y <- problem$y
   signals <- problem$nonzero
-  
+
   fit <- SLOPE(x,
-               y,
-               lambda = "gaussian",
-               solver = "admm",
-               q = 0.1,
-               alpha = alpha/sqrt(n))
-  
+    y,
+    lambda = "gaussian",
+    solver = "admm",
+    q = 0.1,
+    alpha = alpha / sqrt(n)
+  )
+
   selected_slope <- which(fit$nonzeros)
   V <- length(setdiff(selected_slope, signals))
   R <- length(selected_slope)
-  fdr[i] <- V/R
+  fdr[i] <- V / R
 }
 
-library(lattice)
-xyplot(fdr ~ q, type = "b", ylab = "FDR",
-       panel = function(...) {
-         panel.refline(h = 0.1)
-         panel.xyplot(...)
-       })
+library(ggplot2)
+
+ggplot(mapping = aes(q, fdr)) +
+  geom_hline(yintercept = 0.1, lty = 3) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(y = "False Discovery Rate")
 

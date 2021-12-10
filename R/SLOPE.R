@@ -46,7 +46,8 @@
 #'
 #' The binomial model (logistic regression) has the following objective:
 #' \deqn{
-#'   \sum_{i=1}^n \log\left(1+ \exp\left(- y_i \left(x_i^T\beta + \beta_0 \right) \right) \right)
+#'   \sum_{i=1}^n \log\left(1+ \exp\left(
+#'     - y_i \left(x_i^T\beta + \beta_0 \right) \right) \right)
 #' }{
 #'   \sum log(1+ exp(- y_i x_i^T \beta))
 #' }
@@ -57,7 +58,9 @@
 #' In poisson regression, we use the following objective:
 #'
 #' \deqn{
-#'   -\sum_{i=1}^n \left(y_i\left(x_i^T\beta + \beta_0\right) - \exp\left(x_i^T\beta + \beta_0\right)\right)
+#'   -\sum_{i=1}^n \left(y_i\left(
+#'     x_i^T\beta + \beta_0\right) - \exp\left(x_i^T\beta + \beta_0
+#'   \right)\right)
 #' }{
 #'   -\sum (y_i(x_i^T\beta + \beta_0) - exp(x_i^T\beta + \beta_0))
 #' }
@@ -66,29 +69,32 @@
 #'
 #' In multinomial regression, we minimize the full-rank objective
 #' \deqn{
-#'   -\sum_{i=1}^n\left( \sum_{k=1}^{m-1} y_{ik}(x_i^T\beta_k + \beta_{0,k})
-#'                      - \log\sum_{k=1}^{m-1} \exp\big(x_i^T\beta_k + \beta_{0,k}\big) \right)
+#'   -\sum_{i=1}^n\left(
+#'     \sum_{k=1}^{m-1} y_{ik}(x_i^T\beta_k + \beta_{0,k})
+#'     - \log\sum_{k=1}^{m-1} \exp\big(x_i^T\beta_k + \beta_{0,k}\big)
+#'   \right)
 #' }{
-#'   -\sum(y_ik(x_i^T\beta_k + \beta_{0,k}) - log(\sum exp(x_i^T\beta_k + \alpha_{0,k})))
+#'   -\sum(y_ik(x_i^T\beta_k + \beta_{0,k})
+#'   - log(\sum exp(x_i^T\beta_k + \alpha_{0,k})))
 #' }
 #' with \eqn{y_{ik}} being the element in a \eqn{n} by \eqn{(m-1)} matrix, where
 #' \eqn{m} is the number of classes in the response.
 #'
-#' @section Regularization sequences:
+#' @section Regularization Sequences:
 #' There are multiple ways of specifying the `lambda` sequence
-#' in `SLOPE()`. It is, first of all, possible to select the sequence manually by
+#' in `SLOPE()`. It is, first of all, possible to select the sequence manually
+#' by
 #' using a non-increasing
-#' numeric vector, possible of length one, as argument instead of a character.
-#' If all `lambda` are the same value, this will
-#' lead to the ordinary lasso penalty. The greater the differences are between
+#' numeric vector, possibly of length one, as argument instead of a character.
+#' The greater the differences are between
 #' consecutive values along the sequence, the more clustering behavior
 #' will the model exhibit. Note, also, that the scale of the \eqn{\lambda}
 #' vector makes no difference if `alpha = NULL`, since `alpha` will be
 #' selected automatically to ensure that the model is completely sparse at the
 #' beginning and almost unregularized at the end. If, however, both
-#' `alpha` and `lambda` are manually specified, both of the scales will
-#' matter.
-#'
+#' `alpha` and `lambda` are manually specified, then the scales of both do
+#' matter, so make sure to choose them wisely.
+#' 
 #' Instead of choosing the sequence manually, one of the following
 #' automatically generated sequences may be chosen.
 #'
@@ -110,7 +116,8 @@
 #'
 #' This penalty sequence is related to BH, such that
 #' \deqn{
-#'   \lambda_i = \lambda^{(\mathrm{BH})}_i \sqrt{1 + w(i-1)\cdot \mathrm{cumsum}(\lambda^2)_i},
+#'   \lambda_i = \lambda^{(\mathrm{BH})}_i
+#'   \sqrt{1 + w(i-1)\cdot \mathrm{cumsum}(\lambda^2)_i},
 #' }{
 #'   \lambda_i = \lambda^(BH)_i \sqrt{1 + w(i-1) * cumsum(\lambda^2)_i},
 #' }
@@ -123,12 +130,29 @@
 #'
 #' **OSCAR**
 #'
-#' This sequence comes from Bondell and Reich and is a linearly non-increasing
-#' sequence such that
+#' This sequence comes from Bondell and Reich and is a linear non-increasing
+#' sequence, such that
 #' \deqn{
-#'   \lambda_i = q(p - i) + 1.
+#'   \lambda_i = \theta_1 + (p - i)\theta_2.
 #' }
-#' for \eqn{i = 1,\dots,p}.
+#' for \eqn{i = 1,\dots,p}. We use the parametrization from Zhong and Kwok
+#' (2021) but use \eqn{\theta_1} and \eqn{\theta_2} instead of \eqn{\lambda_1}
+#' and \eqn{\lambda_2} to avoid confusion and abuse of notation.
+#' 
+#' **lasso**
+#'
+#' SLOPE is exactly equivalent to the
+#' lasso when the sequence of regularization weights is constant, i.e.
+#' \deqn{
+#'   \lambda_i = 1
+#' }
+#' for \eqn{i = 1,\dots,p}. Here, again, we stress that the fact that
+#' all \eqn{\lambda} are equal to one does not matter as long as
+#' `alpha == NULL` since we scale the vector automatically.
+#' Note that this option is only here for academic interest and
+#' to highlight the fact that SLOPE is
+#' a generalization of the lasso. There are more efficient packages, such as
+#' **glmnet** and **biglasso**, for fitting the lasso.
 #'
 #' @section Solvers:
 #'
@@ -178,7 +202,19 @@
 #'   `lambda_max`; used in the selection of `alpha` when `alpha = "path"`.
 #' @param q parameter controlling the shape of the lambda sequence, with
 #'   usage varying depending on the type of path used and has no effect
-#'   is a custom `lambda` sequence is used.
+#'   is a custom `lambda` sequence is used. Must be greater than `1e-6` and
+#'   smaller than 1.
+#' @param theta1 parameter controlling the shape of the lambda sequence
+#'   when `lambda == "OSCAR"`. This parameter basically sets the intercept
+#'   for the lambda sequence and is equivalent to \eqn{\lambda_1} in the
+#'   original OSCAR formulation.
+#' @param theta2 parameter controlling the shape of the lambda sequence
+#'   when `lambda == "OSCAR"`. This parameter basically sets the slope
+#'   for the lambda sequence and is equivalent to \eqn{\lambda_2} in the
+#'   original OSCAR formulation.
+#' @param prox_method method for calculating the proximal operator for
+#'   the Sorted L1 Norm (the SLOPE penalty). Please see [sortedL1Prox()] for
+#'   more information.
 #' @param max_passes maximum number of passes (outer iterations) for solver
 #' @param diagnostics whether to save diagnostics from the solver
 #'   (timings and other values depending on type of solver)
@@ -200,9 +236,8 @@
 #'   fractional change in deviance falls below this value; note that this is
 #'   automatically set to 0 if a alpha is manually entered
 #' @param tol_dev_ratio the regularization path is stopped if the
-#'   deviance ratio
-#'   \eqn{1 - \mathrm{deviance}/\mathrm{(null-deviance)}}{1 - deviance/(null deviance)}
-#'   is above this threshold
+#'   deviance ratio \eqn{1 - \mathrm{deviance}/\mathrm{(null-deviance)}
+#'   }{1 - deviance/(null deviance)} is above this threshold
 #' @param max_variables criterion for stopping the path in terms of the
 #'   maximum number of unique, nonzero coefficients in absolute value in model.
 #'   For the multinomial family, this value will be multiplied internally with
@@ -279,7 +314,7 @@
 #'
 #' @seealso [plot.SLOPE()], [plotDiagnostics()], [score()], [predict.SLOPE()],
 #'   [trainSLOPE()], [coef.SLOPE()], [print.SLOPE()], [print.SLOPE()],
-#'   [deviance.SLOPE()]
+#'   [deviance.SLOPE()], [sortedL1Prox()]
 #'
 #' @references
 #' Bogdan, M., van den Berg, E., Sabatti, C., Su, W., & Candès, E. J. (2015).
@@ -306,25 +341,29 @@
 #' fit <- SLOPE(bodyfat$x, bodyfat$y)
 #'
 #' # Poisson response, OSCAR-type lambda sequence
-#' fit <- SLOPE(abalone$x,
-#'              abalone$y,
-#'              family = "poisson",
-#'              lambda = "oscar",
-#'              q = 0.4)
+#' fit <- SLOPE(
+#'   abalone$x,
+#'   abalone$y,
+#'   family = "poisson",
+#'   lambda = "oscar",
+#'   theta1 = 1,
+#'   theta2 = 0.9
+#' )
 #'
 #' # Multinomial response, custom alpha and lambda
 #' m <- length(unique(wine$y)) - 1
 #' p <- ncol(wine$x)
 #'
 #' alpha <- 0.005
-#' lambda <- exp(seq(log(2), log(1.8), length.out = p*m))
+#' lambda <- exp(seq(log(2), log(1.8), length.out = p * m))
 #'
-#' fit <- SLOPE(wine$x,
-#'              wine$y,
-#'              family = "multinomial",
-#'              lambda = lambda,
-#'              alpha = alpha)
-#'
+#' fit <- SLOPE(
+#'   wine$x,
+#'   wine$y,
+#'   family = "multinomial",
+#'   lambda = lambda,
+#'   alpha = alpha
+#' )
 SLOPE <- function(x,
                   y,
                   family = c("gaussian", "binomial", "multinomial", "poisson"),
@@ -332,10 +371,13 @@ SLOPE <- function(x,
                   center = !inherits(x, "sparseMatrix"),
                   scale = c("l2", "l1", "sd", "none"),
                   alpha = c("path", "estimate"),
-                  lambda = c("bh", "gaussian", "oscar"),
+                  lambda = c("bh", "gaussian", "oscar", "lasso"),
                   alpha_min_ratio = if (NROW(x) < NCOL(x)) 1e-2 else 1e-4,
                   path_length = if (alpha[1] == "estimate") 1 else 20,
-                  q = 0.1*min(1, NROW(x)/NCOL(x)),
+                  q = 0.1 * min(1, NROW(x) / NCOL(x)),
+                  theta1 = 1,
+                  theta2 = 0.5,
+                  prox_method = c("stack", "pava"),
                   screen = TRUE,
                   screen_alg = c("strong", "previous"),
                   tol_dev_change = 1e-5,
@@ -352,21 +394,23 @@ SLOPE <- function(x,
                   verbosity = 0,
                   sigma,
                   n_sigma,
-                  lambda_min_ratio
-) {
-
+                  lambda_min_ratio) {
   if (!missing(sigma)) {
     warning("`sigma` argument is deprecated; please use `alpha` instead")
     alpha <- sigma
   }
 
   if (!missing(n_sigma)) {
-    warning("`n_sigma` argument is deprecated; please use `path_length` instead")
+    warning(
+      "`n_sigma` argument is deprecated; please use `path_length` instead"
+    )
     path_length <- n_sigma
   }
 
   if (!missing(lambda_min_ratio)) {
-    warning("`lambda_min_ratio` is deprecated; please use `alpha_min_ratio` instead")
+    warning(
+      "`lambda_min_ratio` is deprecated; please use `alpha_min_ratio` instead"
+    )
     alpha_min_ratio <- lambda_min_ratio
   }
 
@@ -375,9 +419,11 @@ SLOPE <- function(x,
   family <- match.arg(family)
   solver <- match.arg(solver)
   screen_alg <- match.arg(screen_alg)
+  prox_method_choice <- switch(match.arg(prox_method), stack = 0, pava = 1)
 
-  if (solver == "admm" && family != "gaussian")
+  if (solver == "admm" && family != "gaussian") {
     stop("ADMM solver is only supported with `family = 'gaussian'`")
+  }
 
   if (is.character(scale)) {
     scale <- match.arg(scale)
@@ -394,7 +440,7 @@ SLOPE <- function(x,
     is.null(alpha_min_ratio) ||
       (alpha_min_ratio > 0 && alpha_min_ratio < 1),
     max_passes > 0,
-    q > 0,
+    q > 1e-6,
     q < 1,
     length(path_length) == 1,
     path_length >= 1,
@@ -408,7 +454,11 @@ SLOPE <- function(x,
     tol_rel >= 0,
     is.logical(center),
     tol_rel_coef_change >= 0,
-    is.numeric(tol_rel_coef_change)
+    is.numeric(tol_rel_coef_change),
+    theta1 >= 0,
+    theta2 >= 0,
+    is.finite(theta1),
+    is.finite(theta2)
   )
 
   fit_intercept <- intercept
@@ -416,17 +466,21 @@ SLOPE <- function(x,
   # convert sparse x to dgCMatrix class from package Matrix.
   is_sparse <- inherits(x, "sparseMatrix")
 
-  if (NROW(y) != NROW(x))
+  if (NROW(y) != NROW(x)) {
     stop("the number of samples in `x` and `y` must match")
+  }
 
-  if (NROW(y) == 0)
+  if (NROW(y) == 0) {
     stop("`y` is empty")
+  }
 
-  if (NROW(x) == 0)
+  if (NROW(x) == 0) {
     stop("`x` is empty")
+  }
 
-  if (anyNA(y) || anyNA(x))
+  if (anyNA(y) || anyNA(x)) {
     stop("missing values are not allowed")
+  }
 
   if (is_sparse) {
     x <- methods::as(x, "dgCMatrix")
@@ -434,8 +488,9 @@ SLOPE <- function(x,
     x <- as.matrix(x)
   }
 
-  if (is_sparse && center)
+  if (is_sparse && center) {
     stop("centering would destroy sparsity in `x` (predictor matrix)")
+  }
 
   res <- preprocessResponse(family, y, fit_intercept)
   y <- as.matrix(res$y)
@@ -445,31 +500,32 @@ SLOPE <- function(x,
   m <- n_targets <- res$n_targets
   response_names <- res$response_names
   variable_names <- colnames(x)
-  max_variables <- max_variables*m
+  max_variables <- max_variables * m
 
-  if (is.null(variable_names))
+  if (is.null(variable_names)) {
     variable_names <- paste0("V", seq_len(p))
-  if (is.null(response_names))
+  }
+  if (is.null(response_names)) {
     response_names <- paste0("y", seq_len(m))
+  }
 
   if (is.character(alpha)) {
     alpha <- match.arg(alpha)
 
     if (alpha == "path") {
-
       alpha_type <- "auto"
       alpha <- double(path_length)
-
     } else if (alpha == "estimate") {
-
-      if (family != "gaussian")
+      if (family != "gaussian") {
         stop("`alpha = 'estimate'` can only be used if `family = 'gaussian'`")
+      }
 
       alpha_type <- "estimate"
       alpha <- NULL
 
-      if (path_length > 1)
+      if (path_length > 1) {
         warning("`path_length` ignored since `alpha = 'estimate'`")
+      }
     }
   } else {
     alpha <- as.double(alpha)
@@ -480,77 +536,88 @@ SLOPE <- function(x,
 
     stopifnot(path_length > 0)
 
-    if (any(alpha < 0))
+    if (any(alpha < 0)) {
       stop("`alpha` cannot contain negative values")
+    }
 
-    if (is.unsorted(rev(alpha)))
+    if (is.unsorted(rev(alpha))) {
       stop("`alpha` must be decreasing")
+    }
 
-    if (anyDuplicated(alpha) > 0)
+    if (anyDuplicated(alpha) > 0) {
       stop("all values in `alpha` must be unique")
+    }
 
     # do not stop path early if user requests specific alpha
     tol_dev_change <- 0
     tol_dev_ratio <- 1
-    max_variables <- (NCOL(x) + intercept)*m
+    max_variables <- (NCOL(x) + intercept) * m
   }
 
-  n_lambda <- m*p
+  n_lambda <- m * p
 
   if (is.character(lambda)) {
-
     lambda_type <- match.arg(lambda)
 
-    if (lambda_type == "bhq")
-      warning("'bhq' option to argument lambda has been depracted and will",
-              "will be defunct in the next release; please use 'bh' instead")
+    if (lambda_type == "bhq") {
+      warning(
+        "'bhq' option to argument lambda has been depracted and will",
+        "will be defunct in the next release; please use 'bh' instead"
+      )
+    }
 
     lambda <- double(n_lambda)
-
   } else {
-
     lambda_type <- "user"
     lambda <- as.double(lambda)
 
-    if (length(lambda) != m*p)
+    if (length(lambda) != m * p) {
       stop("`lambda` must be as long as there are variables")
+    }
 
-    if (is.unsorted(rev(lambda)))
+    if (is.unsorted(rev(lambda))) {
       stop("`lambda` must be non-increasing")
+    }
 
-    if (any(lambda < 0))
+    if (any(lambda < 0)) {
       stop("`lambda` cannot contain negative values")
+    }
   }
 
-  control <- list(family = family,
-                  fit_intercept = fit_intercept,
-                  is_sparse = is_sparse,
-                  scale = scale,
-                  center = center,
-                  path_length = path_length,
-                  n_targets = n_targets,
-                  screen = screen,
-                  screen_alg = screen_alg,
-                  alpha = alpha,
-                  alpha_type = alpha_type,
-                  lambda = lambda,
-                  lambda_type = lambda_type,
-                  alpha_min_ratio = alpha_min_ratio,
-                  q = q,
-                  y_center = y_center,
-                  y_scale = y_scale,
-                  max_passes = max_passes,
-                  diagnostics = diagnostics,
-                  verbosity = verbosity,
-                  max_variables = max_variables,
-                  solver = solver,
-                  tol_dev_change = tol_dev_change,
-                  tol_dev_ratio = tol_dev_ratio,
-                  tol_rel_gap = tol_rel_gap,
-                  tol_infeas = tol_infeas,
-                  tol_abs = tol_abs,
-                  tol_rel = tol_rel,
-                  tol_rel_coef_change = tol_rel_coef_change)
+  control <- list(
+    family = family,
+    fit_intercept = fit_intercept,
+    is_sparse = is_sparse,
+    scale = scale,
+    center = center,
+    path_length = path_length,
+    prox_method_choice = prox_method_choice,
+    n_targets = n_targets,
+    screen = screen,
+    screen_alg = screen_alg,
+    alpha = alpha,
+    alpha_type = alpha_type,
+    lambda = lambda,
+    lambda_type = lambda_type,
+    alpha_min_ratio = alpha_min_ratio,
+    q = q,
+    theta1 = theta1,
+    theta2 = theta2,
+    y_center = y_center,
+    y_scale = y_scale,
+    max_passes = max_passes,
+    diagnostics = diagnostics,
+    verbosity = verbosity,
+    max_variables = max_variables,
+    solver = solver,
+    tol_dev_change = tol_dev_change,
+    tol_dev_ratio = tol_dev_ratio,
+    tol_rel_gap = tol_rel_gap,
+    tol_infeas = tol_infeas,
+    tol_abs = tol_abs,
+    tol_rel = tol_rel,
+    tol_rel_coef_change = tol_rel_coef_change
+  )
 
   fitSLOPE <- if (is_sparse) sparseSLOPE else denseSLOPE
 
@@ -562,16 +629,18 @@ SLOPE <- function(x,
     fit <- fitSLOPE(x, y, control)
   } else {
     # estimate the noise level, if possible
-    if (is.null(alpha) && n >= p + 30)
+    if (is.null(alpha) && n >= p + 30) {
       alpha <- estimateNoise(x, y)
+    }
 
     # run the solver, iteratively if necessary.
     if (is.null(alpha)) {
       # Run Algorithm 5 of Section 3.2.3. (Bogdan et al.)
-      if (intercept)
+      if (intercept) {
         selected <- 1
-      else
+      } else {
         selected <- integer(0)
+      }
 
       repeat {
         selected_prev <- selected
@@ -583,14 +652,17 @@ SLOPE <- function(x,
 
         selected <- which(abs(drop(fit$betas)) > 0)
 
-        if (fit_intercept)
+        if (fit_intercept) {
           selected <- union(1, selected)
+        }
 
-        if (identical(selected, selected_prev))
+        if (identical(selected, selected_prev)) {
           break
+        }
 
-        if (length(selected) + 1 >= n)
+        if (length(selected) + 1 >= n) {
           stop("selected >= n-1 variables; cannot estimate variance")
+        }
       }
     } else {
       control$alpha <- alpha
@@ -608,13 +680,17 @@ SLOPE <- function(x,
 
   if (fit_intercept) {
     nonzeros <- nonzeros[-1, , , drop = FALSE]
-    dimnames(coefficients) <- list(c("(Intercept)", variable_names),
-                                   response_names[1:n_targets],
-                                   paste0("p", seq_len(path_length)))
+    dimnames(coefficients) <- list(
+      c("(Intercept)", variable_names),
+      response_names[1:n_targets],
+      paste0("p", seq_len(path_length))
+    )
   } else {
-    dimnames(coefficients) <- list(variable_names,
-                                   response_names[1:n_targets],
-                                   paste0("p", seq_len(path_length)))
+    dimnames(coefficients) <- list(
+      variable_names,
+      response_names[1:n_targets],
+      paste0("p", seq_len(path_length))
+    )
   }
 
   # check if maximum number of passes where reached anywhere
@@ -623,31 +699,39 @@ SLOPE <- function(x,
 
   if (any(reached_max_passes)) {
     reached_max_passes_where <- which(reached_max_passes)
-    warning("maximum number of passes reached at steps ",
-            paste(reached_max_passes_where, collapse = ", "), "!")
+    warning(
+      "maximum number of passes reached at steps ",
+      paste(reached_max_passes_where, collapse = ", "), "!"
+    )
   }
 
   diagnostics <- if (diagnostics) setupDiagnostics(fit) else NULL
 
-  slope_class <- switch(family,
-                        gaussian = "GaussianSLOPE",
-                        binomial = "BinomialSLOPE",
-                        poisson = "PoissonSLOPE",
-                        multinomial = "MultinomialSLOPE")
+  slope_class <- switch(
+    family,
+    gaussian = "GaussianSLOPE",
+    binomial = "BinomialSLOPE",
+    poisson = "PoissonSLOPE",
+    multinomial = "MultinomialSLOPE"
+  )
 
-  structure(list(coefficients = coefficients,
-                 nonzeros = nonzeros,
-                 lambda = lambda,
-                 alpha = alpha,
-                 class_names = class_names,
-                 passes = passes,
-                 violations = fit$violations,
-                 active_sets = active_sets,
-                 unique = drop(fit$n_unique),
-                 deviance_ratio = drop(fit$deviance_ratio),
-                 null_deviance = fit$null_deviance,
-                 family = family,
-                 diagnostics = diagnostics,
-                 call = ocall),
-            class = c(slope_class, "SLOPE"))
+  structure(
+    list(
+      coefficients = coefficients,
+      nonzeros = nonzeros,
+      lambda = lambda,
+      alpha = alpha,
+      class_names = class_names,
+      passes = passes,
+      violations = fit$violations,
+      active_sets = active_sets,
+      unique = drop(fit$n_unique),
+      deviance_ratio = drop(fit$deviance_ratio),
+      null_deviance = fit$null_deviance,
+      family = family,
+      diagnostics = diagnostics,
+      call = ocall
+    ),
+    class = c(slope_class, "SLOPE")
+  )
 }

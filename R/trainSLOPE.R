@@ -29,7 +29,8 @@
 #' \item{summary}{a summary of the results with means, standard errors,
 #'                and 0.95 confidence levels}
 #' \item{data}{the raw data from the model training}
-#' \item{optima}{a `data.frame` of the best (mean) values for the different metrics and their corresponding parameter values}
+#' \item{optima}{a `data.frame` of the best (mean)
+#'   values for the different metrics and their corresponding parameter values}
 #' \item{measure}{a `data.frame` listing the used metrics and their labels}
 #' \item{model}{the model fit to the entire data set}
 #' \item{call}{the call}
@@ -42,22 +43,36 @@
 #' @examples
 #' # 8-fold cross-validation repeated 5 times
 #' tune <- trainSLOPE(subset(mtcars, select = c("mpg", "drat", "wt")),
-#'                    mtcars$hp,
-#'                    q = c(0.1, 0.2),
-#'                    number = 8,
-#'                    repeats = 5)
+#'   mtcars$hp,
+#'   q = c(0.1, 0.2),
+#'   number = 8,
+#'   repeats = 5,
+#'   measure = "mse"
+#' )
 trainSLOPE <- function(x,
                        y,
                        q = 0.2,
                        number = 10,
                        repeats = 1,
-                       measure = c("mse",
-                                   "mae",
-                                   "deviance",
-                                   "missclass",
-                                   "auc"),
+                       measure = c(
+                         "mse",
+                         "mae",
+                         "deviance",
+                         "misclass",
+                         "auc"
+                       ),
                        ...) {
   ocall <- match.call()
+
+  if ("missclass" %in% measure) {
+    warning("measure 'missclass' is deprecated; please use 'misclass' instead.")
+
+    measure <- measure[!(measure %in% "missclass")]
+
+    if (!("misclass" %in% measure)) {
+      measure <- c(measure, "misclass")
+    }
+  }
 
   n <- NROW(x)
 
@@ -65,9 +80,11 @@ trainSLOPE <- function(x,
 
   y <- as.matrix(y)
 
-  stopifnot(NROW(x) > number,
-            number > 1,
-            repeats >= 1)
+  stopifnot(
+    NROW(x) > number,
+    number > 1,
+    repeats >= 1
+  )
 
   # get initial penalty sequence
   fit <- SLOPE(x, y, ...)
@@ -76,76 +93,97 @@ trainSLOPE <- function(x,
   family <- fit$family
 
   ok <- switch(family,
-               gaussian = c("mse", "mae"),
-               binomial = c("mse", "mae", "deviance", "misclass", "auc"),
-               poisson = c("mse", "mae"),
-               multinomial = c("mse", "mae", "deviance"))
+    gaussian = c("mse", "mae"),
+    binomial = c("mse", "mae", "deviance", "misclass", "auc"),
+    poisson = c("mse", "mae"),
+    multinomial = c("mse", "mae", "deviance", "misclass")
+  )
+
   measure <- measure[measure %in% ok]
 
-  if (length(measure) == 0)
-    stop("measure needs to be one of ", ok)
+  if (length(measure) == 0) {
+    stop(paste0(
+      "For the given family: ", family,
+      ", measure needs to be one of: ",
+      paste0(ok, collapse = ", ")
+    ))
+  }
 
   alpha <- fit$alpha
-
   path_length <- length(alpha)
   n_q <- length(q)
   n_measure <- length(measure)
 
-  fold_size <- ceiling(n/number)
+  fold_size <- ceiling(n / number)
 
-  fold_id <- replicate(repeats, {
-    matrix(c(sample(n), rep(0, number*fold_size - n)), fold_size, byrow = TRUE)
-  })
 
-  grid <- expand.grid(q = q,
-                      fold = seq_len(number),
-                      repetition = seq_len(repeats))
+  # list of repeated folds
+  fold_id <- rep(list(matrix(
+    c(sample(n), rep(0, number * fold_size - n)),
+    fold_size,
+    byrow = TRUE
+  )), repeats)
+
+  grid <- expand.grid(
+    q = q,
+    fold = seq_len(number),
+    repetition = seq_len(repeats)
+  )
 
   # prevent warnings if no backend registered
-  if (!foreach::getDoParRegistered())
+  if (!foreach::getDoParRegistered()) {
     foreach::registerDoSEQ()
+  }
 
   i <- 1 # fixes R CMD check NOTE
 
   r <- foreach(i = seq_len(nrow(grid)), .packages = c("SLOPE")) %dopar% {
-    id <- grid$fold[i]
-    repetition <- grid$repetition[i]
-    q <- grid$q[i]
+    id <- grid[["fold"]][i]
+    repetition <- grid[["repetition"]][i]
+    q <- grid[["q"]][i]
 
-    test_ind <- fold_id[, id, repetition]
+    test_ind <- fold_id[[repetition]][, id]
 
     x_train <- x[-test_ind, , drop = FALSE]
     y_train <- y[-test_ind, , drop = FALSE]
-    x_test  <- x[test_ind, , drop = FALSE]
-    y_test  <- y[test_ind, , drop = FALSE]
+    x_test <- x[test_ind, , drop = FALSE]
+    y_test <- y[test_ind, , drop = FALSE]
 
-    args <- utils::modifyList(list(x = x_train,
-                                   y = y_train,
-                                   q = q,
-                                   alpha = alpha), list(...))
+    # arguments for SLOPE
+    args <- utils::modifyList(list(
+      x = x_train,
+      y = y_train,
+      q = q,
+      alpha = alpha
+    ), list(...))
+
+    # fitting model
+    fit_id <- do.call(SLOPE::SLOPE, args)
+
     s <- lapply(measure, function(m) {
-      SLOPE::score(do.call(SLOPE::SLOPE, args), x_test, y_test, m)
+      SLOPE::score(fit_id, x_test, y_test, measure = m)
     })
 
     unlist(s)
   }
-
-  tmp <- array(unlist(r), c(path_length*n_q, n_measure, number*repeats))
-  d <- matrix(tmp, c(path_length*n_q*n_measure, number*repeats))
+  tmp <- array(unlist(r), c(path_length * n_q, n_measure, number * repeats))
+  d <- matrix(tmp, c(path_length * n_q * n_measure, number * repeats))
 
   means <- rowMeans(d)
-  se <- apply(d, 1, stats::sd)/sqrt(repeats*number)
-  ci <- stats::qt(0.975, number*repeats - 1)*se
+  se <- apply(d, 1, stats::sd) / sqrt(repeats * number)
+  ci <- stats::qt(0.975, number * repeats - 1) * se
   lo <- means - ci
   hi <- means + ci
 
-  summary <- data.frame(q = rep(q, each = path_length*n_measure),
-                        alpha = rep(alpha, n_measure*n_q),
-                        measure = rep(measure, each = path_length, times = n_q),
-                        mean = means,
-                        se = se,
-                        lo = lo,
-                        hi = hi)
+  summary <- data.frame(
+    q = rep(q, each = path_length * n_measure),
+    alpha = rep(alpha, n_measure * n_q),
+    measure = rep(measure, each = path_length, times = n_q),
+    mean = means,
+    se = se,
+    lo = lo,
+    hi = hi
+  )
 
   optima <- do.call(
     rbind,
@@ -153,37 +191,42 @@ trainSLOPE <- function(x,
   )
 
   labels <- vapply(measure, function(m) {
-    switch(
-      m,
+    switch(m,
       deviance = {
-        if (inherits(fit, "GaussianSLOPE"))
+        if (inherits(fit, "GaussianSLOPE")) {
           "Mean-Squared Error"
-        else if (inherits(fit, "BinomialSLOPE"))
+        } else if (inherits(fit, "BinomialSLOPE")) {
           "Binomial Deviance"
-        else if (inherits(fit, "PoissonSLOPE"))
+        } else if (inherits(fit, "PoissonSLOPE")) {
           "Mean-Squared Error"
-        else if (inherits(fit, "MultinomialSLOPE"))
+        } else if (inherits(fit, "MultinomialSLOPE")) {
           "Multinomial Deviance"
+        }
       },
       mse = "Mean Squared Error",
       mae = "Mean Absolute Error",
       accuracy = "Accuracy",
-      auc = "AUC"
+      auc = "AUC",
+      misclass = "Misclassification Rate"
     )
   }, FUN.VALUE = character(1))
 
   rownames(summary) <- NULL
   rownames(optima) <- NULL
 
-  structure(list(summary = summary,
-                 data = d,
-                 optima = optima,
-                 measure = data.frame(measure = measure,
-                                      label = labels,
-                                      row.names = NULL,
-                                      stringsAsFactors = FALSE),
-                 model = fit,
-                 call = ocall),
-            class = "TrainedSLOPE")
+  structure(list(
+    summary = summary,
+    data = d,
+    optima = optima,
+    measure = data.frame(
+      measure = measure,
+      label = labels,
+      row.names = NULL,
+      stringsAsFactors = FALSE
+    ),
+    model = fit,
+    call = ocall
+  ),
+  class = "TrainedSLOPE"
+  )
 }
-
