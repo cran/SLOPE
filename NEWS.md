@@ -1,3 +1,10 @@
+# SLOPE 0.4.1
+
+## Bug Fixes
+
+- The C++ standard library *memory* was added to a source file to fix
+  compilation errors on some systems.
+
 # SLOPE 0.4.0
 
 ## New Functions

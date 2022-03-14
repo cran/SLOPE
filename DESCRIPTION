@@ -1,6 +1,6 @@
 Package: SLOPE
 Title: Sorted L1 Penalized Estimation
-Version: 0.4.0
+Version: 0.4.1
 Authors@R: 
     c(
       person(
@@ -84,7 +84,7 @@ URL: https://jolars.github.io/SLOPE/, https://github.com/jolars/SLOPE
 BugReports: https://github.com/jolars/SLOPE/issues
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2021-12-10 08:40:20 UTC; gerd-jln
+Packaged: 2022-03-14 14:23:52 UTC; gerd-jln
 Author: Johan Larsson [aut, cre] (<https://orcid.org/0000-0002-4029-5945>),
   Jonas Wallin [aut] (<https://orcid.org/0000-0003-0381-6593>),
   Malgorzata Bogdan [aut],
@@ -104,4 +104,4 @@ Author: Johan Larsson [aut, cre] (<https://orcid.org/0000-0002-4029-5945>),
   Krystyna Grzesiak [ctb]
 Maintainer: Johan Larsson <johan.larsson@stat.lu.se>
 Repository: CRAN
-Date/Publication: 2021-12-10 11:50:09 UTC
+Date/Publication: 2022-03-14 18:00:02 UTC

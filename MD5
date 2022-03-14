@@ -1,6 +1,6 @@
-4b240efaaa228832ec35acc80b056689 *DESCRIPTION
+21fd29ea4e94f4c0714f75dc74cda68e *DESCRIPTION
 18fedfd8eae63b104b5f15f92d36cdf1 *NAMESPACE
-7249ec991e89a5a5dc62db33738880da *NEWS.md
+ec3ac9f28b58b7833a020ecda6a9f7fe *NEWS.md
 e6101d12bebebe2713d54dba8998650c *R/RcppExports.R
 08f36bdeed51c8ffbc1c5c83320934be *R/SLOPE-package.R
 45ebd6b6ef21308b83c17894e4f7f966 *R/SLOPE.R
@@ -23,7 +23,7 @@ c49e82d34cae17a1ce954727a34ac1d2 *R/score.R
 cbe984040fe470cc12a15d2af96e9a60 *R/trainSLOPE.R
 b297d2cc12e0d3a41979493ed62c9298 *R/utils.R
 006f12b739279d3edf50fe58fb58df9d *README.md
-21d08bce9dadc42cfc32b1fdfe885278 *build/partial.rdb
+2b45e3f3f47fec677c6436cf2dc713b6 *build/partial.rdb
 6c3ee6569f0970d6ee8faf8c2f04a080 *build/vignette.rds
 c04f85e3405f4784e024bb687250189f *data/abalone.rda
 5d3f5c2c57f43fe983a36260d5125b4d *data/bodyfat.rda
@@ -35,10 +35,10 @@ cf0bd38822712841d8191b5f6fa2983e *inst/CITATION
 dc4a541cac65fd3e23bddcdb52d45b00 *inst/WORDLIST
 f84de419041f0a48285de4009de8637e *inst/doc/introduction.R
 aa17b8a1bd37d9895fd18f62cace6ccc *inst/doc/introduction.Rmd
-1b316b77a13702e7c619ebf786d955ff *inst/doc/introduction.html
+8159aad104932e33fb68805d43c21785 *inst/doc/introduction.html
 387f2edaae4b95192de4f40a26544e91 *inst/doc/prox-algs.R
 b74e947d4398732553ce2f2ad364c39d *inst/doc/prox-algs.Rmd
-46942c6f187c0cde337046ce7fc7f90f *inst/doc/prox-algs.html
+9ad6a86e47589a268a90dcb60ed4443f *inst/doc/prox-algs.html
 e74a44632aaf2a6e7b0559da020f9cac *man/SLOPE-package.Rd
 0213aac71884fbbc69df93f408ae9e7f *man/SLOPE.Rd
 80e2da8f58c1883ea4d5bf77eb09541e *man/abalone.Rd
@@ -70,7 +70,7 @@ e991dae13fc0ea080d0f65cd9ef24b30 *src/SLOPE.h
 5fa147de19af0b84bdf52b5c3514f440 *src/SolverResults.cpp
 5c720416e4ffbc82d7618e94532f7f41 *src/SolverResults.h
 ec1c7f77a284bd55c1d7314d1adc667b *src/families/binomial.h
-f035db704e46b62b1548314f23787c41 *src/families/families.h
+31f980c8f2c20e3b5cfb0b043ab6c36f *src/families/families.h
 0d1ccca86fe3a217590927b7d5fb9c86 *src/families/family.h
 58cf15a7ab4eabc4dd6a93abc42d8c08 *src/families/gaussian.h
 68c083acb62ae85331d38cdc833fbf9b *src/families/multinomial.h
