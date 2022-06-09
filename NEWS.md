@@ -1,3 +1,15 @@
+# SLOPE 0.5.0
+
+## Major changes
+
+- `plot.SLOPE()`, `plot.trainSLOPE()` and `plotDiagnostics()` have been
+  reimplemented in ggplot2.
+
+## Deprecated Functions
+
+- `caretSLOPE()` has been deprecated and will be made defunct in version
+  0.6.0.
+
 # SLOPE 0.4.1
 
 ## Bug Fixes
