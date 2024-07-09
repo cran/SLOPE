@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -32,7 +32,7 @@ for (i in seq_len(nrow(res))) {
   res$time[i] <- time[["real"]] * 1e3 # milliseconds
 }
 
-## ---- fig.cap = "Comparison in execution times between the PAVA algorithm and the stack-based algorithm for solving the SLOPE prox.", fig.width = 5----
+## ----fig.cap = "Comparison in execution times between the PAVA algorithm and the stack-based algorithm for solving the SLOPE prox.", fig.width = 5----
 library(ggplot2)
 library(scales)
 

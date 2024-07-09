@@ -1,13 +1,13 @@
 Package: SLOPE
 Title: Sorted L1 Penalized Estimation
-Version: 0.5.0
+Version: 0.5.1
 Authors@R: 
     c(
       person(
         "Johan",
         "Larsson",
         role = c("aut", "cre"),
-        email = "johan.larsson@stat.lu.se",
+        email = "johanlarsson@outlook.com",
         comment = c(ORCID = "0000-0002-4029-5945")
       ),
       person(
@@ -71,27 +71,27 @@ Authors@R:
     )
 Description: Efficient implementations for Sorted L-One Penalized Estimation
     (SLOPE): generalized linear models regularized with the sorted L1-norm
-    (Bogdan et al. (2015) <doi:10/gfgwzt>). Supported models include ordinary
-    least-squares regression, binomial regression, multinomial regression, and
-    Poisson regression. Both dense and sparse  predictor matrices are supported.
-    In addition, the package features predictor screening rules that enable fast
-    and efficient solutions to high-dimensional problems.
+    (Bogdan et al. 2015). Supported models include
+    ordinary least-squares regression, binomial regression, multinomial
+    regression, and Poisson regression. Both dense and sparse  predictor
+    matrices are supported. In addition, the package features predictor
+    screening rules that enable fast and efficient solutions to high-dimensional
+    problems.
 License: GPL-3
 LazyData: true
 Depends: R (>= 3.5.0)
-Imports: checkmate, foreach, ggplot2, glmnet, Matrix, methods, mice,
-        Rcpp
+Imports: foreach, ggplot2, Matrix, methods, Rcpp
 LinkingTo: Rcpp, RcppArmadillo (>= 0.9.850.1.0)
-Suggests: bench, caret, covr, dplyr, knitr, rmarkdown, scales,
+Suggests: bench, caret, glmnet, covr, dplyr, knitr, rmarkdown, scales,
         spelling, stringr, testthat (>= 2.1.0), tidyr, vdiffr
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.2
 Language: en-US
 Encoding: UTF-8
 URL: https://jolars.github.io/SLOPE/, https://github.com/jolars/SLOPE
 BugReports: https://github.com/jolars/SLOPE/issues
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2022-06-09 15:19:25 UTC; gerd-jln
+Packaged: 2024-07-09 14:08:00 UTC; gerd-jln
 Author: Johan Larsson [aut, cre] (<https://orcid.org/0000-0002-4029-5945>),
   Jonas Wallin [aut] (<https://orcid.org/0000-0003-0381-6593>),
   Malgorzata Bogdan [aut],
@@ -110,6 +110,6 @@ Author: Johan Larsson [aut, cre] (<https://orcid.org/0000-0002-4029-5945>),
   Noah Simon [ctb] (code adapted from 'glmnet'),
   Junyang Qian [ctb] (code adapted from 'glmnet'),
   Akarsh Goyal [ctb]
-Maintainer: Johan Larsson <johan.larsson@stat.lu.se>
+Maintainer: Johan Larsson <johanlarsson@outlook.com>
 Repository: CRAN
-Date/Publication: 2022-06-09 22:40:18 UTC
+Date/Publication: 2024-07-09 15:10:02 UTC

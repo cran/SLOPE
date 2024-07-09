@@ -12,7 +12,7 @@ y <- heart$y
 
 fit <- SLOPE(x, y, family = "binomial", lambda = "bh")
 
-## ---- fig.cap = "Regularization path for a binomial regression model fit to the heart data set.", fig.width = 6, fig.height = 5----
+## ----fig.cap = "Regularization path for a binomial regression model fit to the heart data set.", fig.width = 6, fig.height = 5----
 plot(fit)
 
 ## -----------------------------------------------------------------------------
@@ -30,13 +30,13 @@ tune <- trainSLOPE(
   repeats = 2
 )
 
-## ---- fig.cap = "Model tuning results from Gaussian SLOPE on the bodyfat dataset.", fig.width = 5.5, fig.height = 3----
+## ----fig.cap = "Model tuning results from Gaussian SLOPE on the bodyfat dataset.", fig.width = 5.5, fig.height = 3----
 plot(tune, measure = "mae") # plot mean absolute error
 
 ## -----------------------------------------------------------------------------
 tune
 
-## ---- fig.cap = "Control of false discovery rate using SLOPE.", fig.width = 4----
+## ----fig.cap = "Control of false discovery rate using SLOPE.", fig.width = 4----
 # proportion of real signals
 q <- seq(0.05, 0.5, length.out = 20)
 fdr <- double(length(q))
