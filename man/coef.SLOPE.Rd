@@ -4,7 +4,16 @@
 \alias{coef.SLOPE}
 \title{Obtain coefficients}
 \usage{
-\method{coef}{SLOPE}(object, alpha = NULL, exact = FALSE, simplify = TRUE, sigma, ...)
+\method{coef}{SLOPE}(
+  object,
+  alpha = NULL,
+  exact = FALSE,
+  simplify = TRUE,
+  intercept = TRUE,
+  scale = c("original", "normalized"),
+  sigma,
+  ...
+)
 }
 \arguments{
 \item{object}{an object of class \code{'SLOPE'}.}
@@ -20,6 +29,12 @@ penalty path.}
 
 \item{simplify}{if \code{TRUE}, \code{\link[base:drop]{base::drop()}} will be called before returning
 the coefficients to drop extraneous dimensions}
+
+\item{intercept}{whether to include the intercept in the output; only
+applicable when \code{simplify = TRUE} and an intercept has been fit.}
+
+\item{scale}{whether to return the coefficients in the original scale
+or in the normalized scale.}
 
 \item{sigma}{deprecated. Please use \code{alpha} instead.}
 
@@ -41,8 +56,9 @@ If coefficients from another type of penalty sequence
 please use \code{\link[=SLOPE]{SLOPE()}} to refit the model.
 }
 \examples{
-fit <- SLOPE(mtcars$mpg, mtcars$vs, path_length = 1)
+fit <- SLOPE(mtcars$mpg, mtcars$vs, path_length = 10)
 coef(fit)
+coef(fit, scale = "normalized")
 }
 \seealso{
 \code{\link[=predict.SLOPE]{predict.SLOPE()}}, \code{\link[=SLOPE]{SLOPE()}}

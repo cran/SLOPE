@@ -6,22 +6,22 @@
 \usage{
 \method{plot}{TrainedSLOPE}(
   x,
-  measure = c("auto", "mse", "mae", "deviance", "auc", "misclass"),
   plot_min = TRUE,
   ci_alpha = 0.2,
-  ci_border = FALSE,
+  ci_border = NA,
   ci_col = "salmon",
+  plot_args = list(),
+  polygon_args = list(),
+  lines_args = list(),
+  abline_args = list(),
+  index = NULL,
+  measure,
   ...
 )
 }
 \arguments{
 \item{x}{an object of class \code{'TrainedSLOPE'}, typically from a call
-to \code{\link[=trainSLOPE]{trainSLOPE()}}}
-
-\item{measure}{any of the measures used in the call to \code{\link[=trainSLOPE]{trainSLOPE()}}. If
-\code{measure = "auto"} then deviance will be used for binomial and multinomial
-models, whilst mean-squared error will be used for Gaussian and Poisson
-models.}
+to \code{\link[=cvSLOPE]{cvSLOPE()}}}
 
 \item{plot_min}{whether to mark the location of the penalty corresponding
 to the best prediction score}
@@ -33,11 +33,30 @@ confidence limits}
 
 \item{ci_col}{color for border of confidence limits}
 
-\item{...}{words}
+\item{plot_args}{list of additional arguments to pass to \code{\link[=plot]{plot()}},
+which sets up the plot frame}
+
+\item{polygon_args}{list of additional arguments to pass to
+\code{\link[graphics:polygon]{graphics::polygon()}}, which fills the confidence limits}
+
+\item{lines_args}{list of additional arguments to pass to
+\code{\link[graphics:lines]{graphics::lines()}}, which plots the mean}
+
+\item{abline_args}{list of additional arguments to pass to
+\code{\link[graphics:abline]{graphics::abline()}}, which plots the minimum}
+
+\item{index}{an optional index, to plot only one (the index-th) set
+of the parameter combinations.}
+
+\item{measure}{any of the measures used in the call to \code{\link[=trainSLOPE]{trainSLOPE()}}. If
+\code{measure = "auto"} then deviance will be used for binomial and multinomial
+models, whilst mean-squared error will be used for Gaussian and Poisson
+models.}
+
+\item{...}{ignored}
 }
 \value{
-An object of class \code{"ggplot"}, which will be plotted on the
-current device unless stored in a variable.
+A plot for every value of \code{q} is produced on the current device.
 }
 \description{
 Plot results from cross-validation
@@ -45,18 +64,19 @@ Plot results from cross-validation
 \examples{
 # Cross-validation for a SLOPE binomial model
 set.seed(123)
-tune <- trainSLOPE(subset(mtcars, select = c("mpg", "drat", "wt")),
+tune <- cvSLOPE(
+  subset(mtcars, select = c("mpg", "drat", "wt")),
   mtcars$hp,
   q = c(0.1, 0.2),
-  number = 10
+  n_folds = 10
 )
-plot(tune, ci_col = "salmon")
+plot(tune, ci_col = "salmon", index = 1)
 }
 \seealso{
-\code{\link[=trainSLOPE]{trainSLOPE()}}
+\code{\link[=cvSLOPE]{cvSLOPE()}}
 
 Other model-tuning: 
-\code{\link{caretSLOPE}()},
+\code{\link{cvSLOPE}()},
 \code{\link{trainSLOPE}()}
 }
 \concept{model-tuning}

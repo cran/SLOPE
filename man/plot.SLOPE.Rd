@@ -8,6 +8,8 @@
   x,
   intercept = FALSE,
   x_variable = c("alpha", "deviance_ratio", "step"),
+  magnitudes = FALSE,
+  add_labels = FALSE,
   ...
 )
 }
@@ -20,11 +22,16 @@
 the scaling parameter for the sequence, \code{"deviance_ratio"} plots
 the fraction of deviance explained, and \code{"step"} plots step number.}
 
-\item{...}{further arguments passed to or from other methods.}
+\item{magnitudes}{whether to plot the magnitudes of the coefficients}
+
+\item{add_labels}{whether to add labels (numbers) on the right side
+of the plot for each coefficient}
+
+\item{...}{arguments passed to \code{\link[graphics:matplot]{graphics::matplot()}}}
 }
 \value{
-An object of class \code{"ggplot"}, which will be plotted on the
-current device unless stored in a variable.
+Invisibly returns NULL. The function is called for its
+side effect of producing a plot.
 }
 \description{
 Plot the fitted model's regression

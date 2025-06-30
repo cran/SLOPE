@@ -1,3 +1,124 @@
+# SLOPE 1.0.0
+
+This update of SLOPE brings an entirely different C++ implementation of the
+underlying package based on the C++ library
+[libslope](https://github.com/jolars/libslope). It comes with several large and
+breaking changes with respect to the previous version of the package.
+
+We realized that this may throw off some users, and hope that you will be
+patient with dealing with the large number of breaking changes.
+
+## Breaking Changes
+
+- The `caretSLOPE()` function that was deprecated has now been removed from the
+  package.
+- Fields `unique`, `violations`, and `active_sets` are no longer stored in the
+  `SLOPE` object. These fields were typically only used for debugging purposes.
+- The `prox_method` and `method` arguments in `SLOPE()` and `sortedL1Prox()`,
+  respectively, have been removed. The proximal operator is now always computed
+  using the fast stack-based algorithm. There was never any reason to use the
+  slower PAVA algorithm.
+- The ADMM solver has been removed from the package. Calling `SLOPE()` with
+  `solver = "admm"` will now throws a warning and the value will be
+  automatically set to `"auto"`.
+- `alpha` is now scaled by `n` (the number of observations) and differences with
+  respect to the type of scaling are no longer taken into account.
+- The object `coefficients` from `SLOPE()` is now a list of sparse matrices
+  (rather than a three-dimensional array as before). Now it contains only the
+  coefficients and not the intercepts. The intercepts are instead stored in
+  `intercepts` in the returned object and are always present even if
+  `intercept = FALSE`.
+- The behavior of `coef.SLOPE()` has changed somewhat, and if
+  `simplify = FALSE`, then the returned object is now instead a list of sparse
+  matrices (rather than a three-dimensional array as before).
+- The default value of `q` in `SLOPE()` has changed from
+  `0.1 * min(1, NROW(x) / NCOL(x))` to `0.1`.
+- Arguments `sigma`, `n_sigma`, and `lambda_min_ratio` in `SLOPE()` that were
+  previously deprecated have been removed.
+- `SLOPE()` now internally solves the problem normalized by scaling with the
+  number of observations, which means that values returned in `deviance` and
+  `prmals` and `duals` if `diagnostics = TRUE` are now scaled by `n`.
+- `path_length` in `SLOPE()` now defaults to 100 (previously 20).
+- `tol_dev_ratio` in `SLOPE()` now defaults to `0.999` (previously `0.995`).
+- Plots from `plot.SLOPE()` now use base R graphics rather than ggplot2. This
+  means that the plots are more difficult to customize but plot much more faster
+  when there are many variables and significantly reduces the dependency load of
+  the package. For plots of trained SLOPE objects, which used to be faceted on
+  the `q` parameter, the user now needs to use the standard base R graphics API
+  to facet plots via `par(mfrow = c(1, 2))` or similar.
+
+## Deprecated Functionality
+
+- Arguments `tol_rel_gap`, `tol_infeas`, `tol_abs`, `tol_rel`, `tol_rel_coef` in
+  `SLOPE()` are now deprecated. The solvers now all rely on the same tolerance
+  criterion, which is set by `tol` and uses the duality gap normalized by the
+  current primal value.
+- Arguments `screen` and `screen_alg` are now deprecated and have no effect.
+  Feature screening is always used. These arguments were only used for
+  debugging.
+- The argument `verbosity` in `SLOPE()` is now defunct and has no effect.
+- The argument `prox_method` in `SLOPE()` and `sortedL1Prox()` is now defunct
+  and has no effect.
+
+## New Features
+
+- Centering `x` in `SLOPE()` is now allowed again, even when the matrix is
+  sparse.
+- Out-of-memory matrices are now allowed through the `bigmemory` package. Only
+  support for dense matrices is available at the moment.
+- Centers and scales can now be specified manually by providing vectors to
+  `center` and `scale` in `SLOPE()`.
+- A new solver based on a hybrid method of proximal gradient descent and
+  coordinate descent is available and used by default by the Gaussian and
+  binomial families. Use it by specifying `solver = "hybrid"`.
+- Solver can now be set to `"auto"`, in which case the package automatically
+  chooses a solver.
+- The returned duality gaps when `diagnostics = TRUE` are now _true_ duality
+  gaps, computed by guaranteeing that the dual variable is feasible (which was
+  not the case previously).
+- `scale` in `SLOPE()` gains a new option `"max_abs"` which scales the columns
+  of `x` by their maximum absolute value.
+- When `alpha = "estimate"`, there is a now an iteration limit in case the
+  algorithm does not converge to one set of features. Thanks @RomanParzer.
+- `plot.SLOPE()` gains a new argument `magnitudes`, which causes the plot to
+  only show the magnitudes of the coefficients (which helps if you want to
+  visualize cluster structure).
+- `plot.SLOPE()` gains a new argument `add_labels`, which add numbers for the
+  coefficients to the plot. Set to `FALSE` by default.
+- Relaxed SLOPE models can now be fit by specifying `gamma` in `SLOPE()`.
+- `plot.trainedSLOPE()` gains a new argument `index`, to select which of the
+  hyperparameter combinations to plot for.
+- There's a new function `plotClusters()`, which allows plotting the cluster
+  structure in SLOPE. Thanks, @KrystynaGrzesiak!
+- `SLOPE()` gains a new argument `cd_type`, to control the type of coordinate
+  descent used for the hybrid solver, with options `"cyclical"` and
+  `"permuted"`.
+
+## Bug Fixes
+
+- Return correct model when training for AUC in `trainSLOPE()`.
+
+## Performance Improvements
+
+The new hybrid algorithm that's implemented in libslope and now used in the
+package constitutes a major upgrade in terms of performance.
+
+- The solver is now much more memory-efficient and can avoid copies of the
+  design matrix entirely by normalizing the columns just-in-time. This is the
+  standard behavior. Future versions of the package will allow the user to
+  specify whether to copy (and modify) the design matrix or not.
+
+## Dependencies
+
+We have made an effort to reduce the footprint of the package and reduce the
+number of dependencies.
+
+- The package now relies on Eigen (through RcppEigen) rather than Armadillo,
+  which means that there is no longer any reliance on BLAS and LAPACK libraries.
+- The dependency on `ggplot2` is removed.
+- The `vdiffr`, `tidyr`, `dplyr`, `bench`, `scales`, and `glmnet` packages in
+  the `Suggests` field that were used for testing are now removed.
+
 # SLOPE 0.5.2
 
 ## Bug Fixes

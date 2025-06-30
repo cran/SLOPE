@@ -12,23 +12,23 @@ camelCase <- function(x) {
   })
 }
 
-randomProblem <- function(n = 1000,
-                          p = 100,
-                          q = 0.2,
-                          n_groups = NULL,
-                          n_targets =
-                            if (match.arg(response) == "multinomial") 3 else 1,
-                          density = 1,
-                          amplitude =
-                            if (match.arg(response) == "poisson") 1 else 3,
-                          alpha = 1,
-                          response = c(
-                            "gaussian",
-                            "binomial",
-                            "poisson",
-                            "multinomial"
-                          ),
-                          rho = 0) {
+randomProblem <- function(
+  n = 1000,
+  p = 100,
+  q = 0.2,
+  n_groups = NULL,
+  n_targets = if (match.arg(response) == "multinomial") 3 else 1,
+  density = 1,
+  amplitude = if (match.arg(response) == "poisson") 1 else 3,
+  alpha = 1,
+  response = c(
+    "gaussian",
+    "binomial",
+    "poisson",
+    "multinomial"
+  ),
+  rho = 0
+) {
   m <- n_targets
 
   if (density == 1) {
@@ -42,7 +42,8 @@ randomProblem <- function(n = 1000,
   }
 
   if (!is.null(n_groups)) {
-    groups <- rep(seq_len(n_groups),
+    groups <- rep(
+      seq_len(n_groups),
       each = ceiling(m * p / n_groups),
       length.out = p * m
     )
@@ -70,7 +71,7 @@ randomProblem <- function(n = 1000,
       y <- apply(prob, 1, function(x) sample(1:m, 1, prob = x))
     },
     poisson = {
-      lambda <- as.double(exp(x %*% beta))
+      lambda <- as.double(exp(0.1 * x %*% beta))
       y <- stats::rpois(n, lambda)
     }
   )

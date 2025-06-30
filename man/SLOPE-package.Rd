@@ -5,6 +5,8 @@
 \alias{SLOPE-package}
 \title{SLOPE: Sorted L1 Penalized Estimation}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Efficient implementations for Sorted L-One Penalized Estimation (SLOPE): generalized linear models regularized with the sorted L1-norm (Bogdan et al. 2015). Supported models include ordinary least-squares regression, binomial regression, multinomial regression, and Poisson regression. Both dense and sparse predictor matrices are supported. In addition, the package features predictor screening rules that enable fast and efficient solutions to high-dimensional problems.
 }
 \seealso{
@@ -22,7 +24,7 @@ Useful links:
 Authors:
 \itemize{
   \item Jonas Wallin \email{jonas.wallin@stat.lu.se} (\href{https://orcid.org/0000-0003-0381-6593}{ORCID})
-  \item Malgorzata Bogdan
+  \item Malgorzata Bogdan (\href{https://orcid.org/0000-0002-0657-4342}{ORCID})
   \item Ewout van den Berg
   \item Chiara Sabatti
   \item Emmanuel Candes
@@ -30,6 +32,8 @@ Authors:
   \item Weijie Su
   \item Jakub Kała
   \item Krystyna Grzesiak
+  \item Mathurin Massias
+  \item Quentin Klopfenstein
   \item Michal Burdukiewicz (\href{https://orcid.org/0000-0001-8926-582X}{ORCID})
 }
 
@@ -41,7 +45,6 @@ Other contributors:
   \item Balasubramanian Narasimhan (code adapted from 'glmnet') [contributor]
   \item Noah Simon (code adapted from 'glmnet') [contributor]
   \item Junyang Qian (code adapted from 'glmnet') [contributor]
-  \item Akarsh Goyal [contributor]
 }
 
 }

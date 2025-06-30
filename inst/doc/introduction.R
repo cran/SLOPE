@@ -26,7 +26,6 @@ tune <- trainSLOPE(
   y,
   q = c(0.1, 0.2),
   number = 5,
-  solver = "admm",
   repeats = 2
 )
 
@@ -55,23 +54,27 @@ for (i in seq_along(q)) {
   fit <- SLOPE(x,
     y,
     lambda = "gaussian",
-    solver = "admm",
     q = 0.1,
     alpha = alpha / sqrt(n)
   )
 
-  selected_slope <- which(fit$nonzeros)
-  V <- length(setdiff(selected_slope, signals))
-  R <- length(selected_slope)
-  fdr[i] <- V / R
+  selected_slope <- which(as.matrix(fit$nonzeros[[1]]))
+  v <- length(setdiff(selected_slope, signals))
+  r <- length(selected_slope)
+  fdr[i] <- v / max(r, 1)
 }
 
-library(ggplot2)
+# Create the plot
+plot(
+  q,
+  fdr,
+  type = "o",
+  xlab = "q",
+  ylab = "FDR",
+  pch = 16,
+  las = 1
+)
 
-ggplot(mapping = aes(q, fdr)) +
-  geom_hline(yintercept = 0.1, lty = 3) +
-  geom_line() +
-  geom_point() +
-  theme_minimal() +
-  labs(y = "False Discovery Rate")
+# Add horizontal line at 0.1
+abline(h = 0.1, lty = 3)
 

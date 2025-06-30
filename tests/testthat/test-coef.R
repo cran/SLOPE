@@ -1,12 +1,13 @@
-test_that("intepolating coefficients works properly", {
+test_that("interpolating coefficients works properly", {
   set.seed(3)
   xy <- SLOPE:::randomProblem(100, 10)
 
   # check for slope
   fit <- SLOPE(xy$x, xy$y)
 
-  expect_type(coef(fit), "double")
+  expect_s4_class(coef(fit), "dgCMatrix")
   expect_silent(coef(fit, alpha = c(0.001, 0.04)))
+  # coef(fit, alpha = c(0.001, 0.04))
 
   # check for lasso
   fit <- SLOPE(xy$x, xy$y)
@@ -27,10 +28,10 @@ test_that("simplify argument in coef() works as expected", {
 
   # check simplify
   coefs <- coef(fit, simplify = TRUE)
-  expect_true(length(dim(coefs)) == 2)
+  expect_s4_class(coefs, "dgCMatrix")
 
   coefs <- coef(fit, simplify = FALSE)
-  expect_true(length(dim(coefs)) == 3)
+  expect_type(coefs, "list")
 })
 
 test_that("refitting works if exact = TRUE", {
@@ -43,5 +44,5 @@ test_that("refitting works if exact = TRUE", {
   # check simplify
   coefs <- coef(fit, alpha = 0.4, exact = TRUE, x = xy$x, y = xy$y)
 
-  expect_type(coefs, "double")
+  expect_s4_class(coefs, "dgCMatrix")
 })

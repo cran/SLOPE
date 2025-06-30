@@ -15,7 +15,7 @@
 #' @export
 print.SLOPE <- function(x, ...) {
   alpha <- x$alpha
-  n_nonzero <- apply(x$nonzeros, 3, sum)
+  n_nonzero <- vapply(x$nonzeros, sum, FUN.VALUE = double(1))
   deviance_ratio <- x$deviance_ratio
 
   out <- data.frame(
@@ -25,7 +25,8 @@ print.SLOPE <- function(x, ...) {
   )
 
   # print call
-  cat("\nCall:\n",
+  cat(
+    "\nCall:\n",
     paste(deparse(x$call), sep = "\n", collapse = "\n"),
     "\n\n",
     sep = ""
@@ -40,7 +41,9 @@ print.SLOPE <- function(x, ...) {
 #' @method print TrainedSLOPE
 #' @export
 print.TrainedSLOPE <- function(x, ...) {
-  cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
+  cat(
+    "\nCall:\n",
+    paste(deparse(x$call), sep = "\n", collapse = "\n"),
     "\n\n",
     sep = ""
   )
