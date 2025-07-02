@@ -1,6 +1,6 @@
-0ae8e4ef7b67c1bea36473871f04a867 *DESCRIPTION
+9c4fa606083c5a1adce73a6dc4922608 *DESCRIPTION
 3e692ff4fcd31e87bab90a48d0fdb898 *NAMESPACE
-2b420722e820c4f25310a0f5dfdc592e *NEWS.md
+3a770292a3aaf3630490435c08415cc6 *NEWS.md
 9d0e2d4dd7a9bc91a2abedd7384c740e *R/RcppExports.R
 9191c56e7dc11d2f77dc790e6b45ac98 *R/SLOPE-package.R
 bea7c18af796925074fcfda7df6273f9 *R/coef.R
@@ -33,10 +33,10 @@ b0d419a95e50e3017f6cc3852e844188 *inst/CITATION
 d649591967ab317f4b9fc1919b438349 *inst/WORDLIST
 bb308d95aee69346bdea5f710437452f *inst/doc/introduction.R
 62b7c22cf1d07ff9ccd7bfd318c61f52 *inst/doc/introduction.Rmd
-3adaa462d36c70f26926bc6c801fafba *inst/doc/introduction.html
+0ebbb2347914015e12b42e73cc689b39 *inst/doc/introduction.html
 942a53c41a52060f829a7916cf8ae922 *inst/doc/solvers.R
 823c7e7e6f3c7761b6a56e69f72c0821 *inst/doc/solvers.Rmd
-e53ee38abd8fad576928bc2b11937f5a *inst/doc/solvers.html
+d54e3ab77fcf4c1c3c834a33f2f8442f *inst/doc/solvers.html
 612d028aa325c2cd9aeb917278002ba5 *man/SLOPE-package.Rd
 5a63a13d37b6b41ab3f5b2afc75d6a67 *man/SLOPE.Rd
 80e2da8f58c1883ea4d5bf77eb09541e *man/abalone.Rd
@@ -140,7 +140,7 @@ bd8d84678b757abae73c0a117bf97c38 *tests/testthat/test-alpha-scaling.R
 36cda672fcdc6a4daa0001ab573fffeb *tests/testthat/test-binomial.R
 a3926b99c0967319f23e523c7a6bf6fe *tests/testthat/test-coef.R
 1d67c46585b40979b163242e97b66506 *tests/testthat/test-cv.R
-9f71bf11b7499a5dec56c0336e70de0c *tests/testthat/test-deviance.R
+5c4ed81167fdf56f86e4acd1c73d134e *tests/testthat/test-deviance.R
 06ed83cd3217bb80b6cd575df7c0591c *tests/testthat/test-diagnostics.R
 e1cbd3695b50b12bddd7b2a6e28dfe83 *tests/testthat/test-gaussian.R
 226671d2ec29b4cb9a3e84a492c32ff4 *tests/testthat/test-lambda-sequence.R
