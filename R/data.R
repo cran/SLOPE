@@ -188,9 +188,34 @@
 #'   Student Performance. In A. Brito and J. Teixeira Eds., Proceedings of 5th
 #'   FUture BUsiness TEChnology Conference (FUBUTEC 2008) pp. 5-12, Porto,
 #'   Portugal, April, 2008, EUROSIS, ISBN 978-9077381-39-7.
-#'   <http://www3.dsi.uminho.pt/pcortez/student.pdf>
-#' @source Dua, D. and Karra Taniskidou, E. (2017). UCI Machine Learning Repository
-#'  <http://archive.ics.uci.edu/ml/>. Irvine, CA: University of California,
-#'  School of Information and Computer Science.
+#' @source Dua, D. and Karra Taniskidou, E. (2017). UCI Machine Learning
+#'  Repository <http://archive.ics.uci.edu/ml/>. Irvine, CA: University of
+#'  California, School of Information and Computer Science.
 #' @family datasets
 "student"
+
+#' Glioma metabolomics
+#'
+#' Metabolomics dataset from 165 different plasma measurements from
+#' 94 patients (cases) with glioma (brain tumours) and 71 healthy controls. The
+#' goal is to predict whether a sample is from a patient or a control based
+#' on the metabolite measurements.
+#'
+#' @section Preprocessing:
+#' We have removed the patients with meningioma from the original dataset (which
+#' contained 235 samples) to create a binary classification problem. Also,
+#' the authors originally had 188 features but removed some of these due to
+#' missing data.
+#'
+#' @format 165 observations from 138 variables represented as a list consisting
+#'   of a binary response (factor) vector `y` with levels 'control' and 'case'
+#'   indicating whether the sample is from a healthy control or a patient with
+#'   glioma, as well as `x`: a matrix of 138 metabolite measurements.
+#'
+#' @source Godlewski, A., Czajkowski, M., Mojsak, P., Pienkowski, T., Gosk, W.,
+#'   Lyson, T., Mariak, Z., Reszec, J., Kondraciuk, M., Kaminski, K., Kretowski,
+#'   M., Moniuszko, M., Kretowski, A., & Ciborowski, M. (2023). A comparison of
+#'   different machine-learning techniques for the selection of a panel of
+#'   metabolites allowing early detection of brain tumors. Scientific Reports,
+#'   13(1), 11044. \doi{10.1038/s41598-023-38243-1}
+"glioma"

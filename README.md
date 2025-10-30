@@ -7,10 +7,11 @@
 
 [![R build
 status](https://github.com/jolars/SLOPE/workflows/R-CMD-check/badge.svg)](https://github.com/jolars/SLOPE/actions)
-[![Coverage
-status](https://codecov.io/gh/jolars/SLOPE/graph/badge.svg?token=SmorGv47Zg)](https://app.codecov.io/github/jolars/SLOPE)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/SLOPE)](https://CRAN.R-project.org/package=SLOPE)
+[![Code
+coverage](https://codecov.io/gh/jolars/SLOPE/graph/badge.svg)](https://app.codecov.io/gh/jolars/SLOPE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17475845.svg)](https://doi.org/10.5281/zenodo.17475845)
 <!-- badges: end -->
 
 Efficient implementations for Sorted L-One Penalized Estimation (SLOPE):
