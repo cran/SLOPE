@@ -1,3 +1,29 @@
+# SLOPE 1.2.0
+
+## Major Changes
+
+- The default argument for `threads` in `SLOPE()` has been changed from `NULL`
+  (half of available cores) to `1` (no multithreading). This is to avoid
+  excessive CPU usage on systems with many cores. Users can still set
+  `threads = NULL` to get the previous behavior, or set it to any positive
+  integer to control the number of threads used.
+
+## Minor Changes
+
+- The C++ routine can now be interrupted through R's usual interrupt mechanism
+  (e.g., Ctrl+C in RStudio or R terminal).
+- The citation information has been updated. Use `citation("SLOPE")` to see the
+  correct way to cite the package.
+- The y axis label for coefficients has changed from `expression(hat(beta))` to
+  `"Coefficients"` to avoid issues with rendering in some environments, where
+  the hat symbol would be cropped.
+
+## Bug Fixes
+
+- In the return object from `SLOPE()`, the `coefficients_scaled` field
+  incorrectly contained unscaled coefficients, which also affected
+  `coef.SLOPE()`. This has now been fixed.
+
 # SLOPE 1.1.0
 
 ## New Features
