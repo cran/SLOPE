@@ -1,4 +1,4 @@
-#' Train a SLOPE model
+#' Train a SLOPE Model
 #'
 #' This function trains a model fit by [SLOPE()] by tuning its parameters
 #' through cross-validation.
@@ -9,12 +9,6 @@
 #' computationally so it is almost always best to leave this argument
 #' as it is and then choose which argument to focus on in the call
 #' to [plot.TrainedSLOPE()].
-#'
-#' @section Parallel operation:
-#' This function uses the **foreach** package to enable parallel
-#' operation. To enable this, simply register a parallel backend
-#' using, for instance, `doParallel::registerDoParallel()` from the
-#' **doParallel** package before running this function.
 #'
 #' @inheritParams SLOPE
 #' @param number number of folds (cross-validation)
@@ -36,8 +30,6 @@
 #' \item{call}{the call}
 #'
 #' @export
-#'
-#' @seealso [plot.TrainedSLOPE()]
 #' @family model-tuning
 #'
 #' @examples
@@ -139,7 +131,6 @@ trainSLOPE <- function(
   # Initialize list to store results
   r <- vector("list", nrow(grid))
 
-  # Loop through grid rows instead of using foreach
   for (i in seq_len(nrow(grid))) {
     id <- grid[["fold"]][i]
     repetition <- grid[["repetition"]][i]

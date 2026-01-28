@@ -1,3 +1,32 @@
+# SLOPE 2.0.0
+
+## Breaking Changes
+
+- `coef.SLOPE()` with `simplify = FALSE` and `intercept = TRUE` now includes the
+  intercepts as part of the returned list of coefficient matrices.
+
+## New Features
+
+- The `plot.SLOPE()` method now plots a dot chart if there is just a single
+  value of `alpha`, and not an empty plot (as before).
+- The `SLOPE` object now includes `n_observations` and `n_predictors` fields,
+  which store the number of observations and predictors in the training data.
+- The `summary.SLOPE()` method now displays the number of observations and
+  predictors, with improved formatting for the path summary table.
+- Added `summary()` method for `TrainedSLOPE` objects (from `cvSLOPE()` and
+  `trainSLOPE()`), which provides a concise overview of cross-validation results
+  including optimal parameters and performance metrics.
+- Added `refit()` method for `TrainedSLOPE` objects to conveniently refit models
+  with optimal parameters found through cross-validation.
+- `cvSLOPE()` now automatically refits the model on the full dataset using
+  optimal parameters (controlled by new `refit` argument, default `TRUE`). The
+  fitted model is stored in the `model` slot of the returned object.
+
+## Minor Changes
+
+- All roxygen documentation titles have been converted to title case for
+  consistency.
+
 # SLOPE 1.2.0
 
 ## Major Changes

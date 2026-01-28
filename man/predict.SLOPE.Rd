@@ -6,9 +6,18 @@
 \alias{predict.BinomialSLOPE}
 \alias{predict.PoissonSLOPE}
 \alias{predict.MultinomialSLOPE}
-\title{Generate predictions from SLOPE models}
+\title{Generate Predictions from SLOPE Models}
 \usage{
-\method{predict}{SLOPE}(object, x, alpha = NULL, type = "link", simplify = TRUE, sigma, ...)
+\method{predict}{SLOPE}(
+  object,
+  x,
+  alpha = NULL,
+  type = "link",
+  simplify = TRUE,
+  exact = FALSE,
+  sigma,
+  ...
+)
 
 \method{predict}{GaussianSLOPE}(
   object,
@@ -64,15 +73,15 @@ and \code{"class"} returns class predictions.}
 \item{simplify}{if \code{TRUE}, \code{\link[base:drop]{base::drop()}} will be called before returning
 the coefficients to drop extraneous dimensions}
 
-\item{sigma}{deprecated. Please use \code{alpha} instead.}
-
-\item{...}{ignored and only here for method consistency}
-
 \item{exact}{if \code{TRUE} and the given parameter values differ from those in
 the original fit, the model will be refit by calling \code{\link[stats:update]{stats::update()}} on
 the object with the new parameters. If \code{FALSE}, the predicted values
 will be based on interpolated coefficients from the original
 penalty path.}
+
+\item{sigma}{deprecated. Please use \code{alpha} instead.}
+
+\item{...}{ignored and only here for method consistency}
 }
 \value{
 Predictions from the model with scale determined by \code{type}.
@@ -85,13 +94,14 @@ fit <- with(mtcars, SLOPE(cbind(mpg, hp), vs, family = "binomial"))
 predict(fit, with(mtcars, cbind(mpg, hp)), type = "class")
 }
 \seealso{
-\code{\link[stats:predict]{stats::predict()}}, \code{\link[stats:predict.glm]{stats::predict.glm()}}, \code{\link[=coef.SLOPE]{coef.SLOPE()}}
+\code{\link[stats:predict]{stats::predict()}}, \code{\link[stats:predict.glm]{stats::predict.glm()}}
 
 Other SLOPE-methods: 
 \code{\link{coef.SLOPE}()},
 \code{\link{deviance.SLOPE}()},
 \code{\link{plot.SLOPE}()},
 \code{\link{print.SLOPE}()},
-\code{\link{score}()}
+\code{\link{score}()},
+\code{\link{summary.SLOPE}()}
 }
 \concept{SLOPE-methods}

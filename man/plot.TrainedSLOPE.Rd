@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.R
 \name{plot.TrainedSLOPE}
 \alias{plot.TrainedSLOPE}
-\title{Plot results from cross-validation}
+\title{Plot Results from Cross-Validation}
 \usage{
 \method{plot}{TrainedSLOPE}(
   x,
@@ -59,7 +59,7 @@ models.}
 A plot for every value of \code{q} is produced on the current device.
 }
 \description{
-Plot results from cross-validation
+Plot Results from Cross-Validation
 }
 \examples{
 # Cross-validation for a SLOPE binomial model
@@ -73,10 +73,10 @@ tune <- cvSLOPE(
 plot(tune, ci_col = "salmon", index = 1)
 }
 \seealso{
-\code{\link[=cvSLOPE]{cvSLOPE()}}
-
 Other model-tuning: 
 \code{\link{cvSLOPE}()},
+\code{\link{refit}()},
+\code{\link{summary.TrainedSLOPE}()},
 \code{\link{trainSLOPE}()}
 }
 \concept{model-tuning}

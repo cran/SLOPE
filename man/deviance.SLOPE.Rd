@@ -2,7 +2,7 @@
 % Please edit documentation in R/deviance.R
 \name{deviance.SLOPE}
 \alias{deviance.SLOPE}
-\title{Model deviance}
+\title{Model Deviance}
 \usage{
 \method{deviance}{SLOPE}(object, ...)
 }
@@ -16,7 +16,7 @@ For Gaussian models this is twice the residual sums of squares. For
 all other models, two times the negative loglikelihood is returned.
 }
 \description{
-Model deviance
+Model Deviance
 }
 \examples{
 fit <- SLOPE(heart$x, heart$y, family = "binomial")
@@ -30,6 +30,7 @@ Other SLOPE-methods:
 \code{\link{plot.SLOPE}()},
 \code{\link{predict.SLOPE}()},
 \code{\link{print.SLOPE}()},
-\code{\link{score}()}
+\code{\link{score}()},
+\code{\link{summary.SLOPE}()}
 }
 \concept{SLOPE-methods}

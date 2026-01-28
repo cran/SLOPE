@@ -30,10 +30,9 @@
 
 #' Abalone
 #'
-#' This data set contains observations of abalones, the common
-#' name for any of a group of sea snails. The goal is to predict the
-#' age of an individual abalone given physical measurements such as
-#' sex, weight, and height.
+#' This data set contains observations of abalones. The goal is to predict the
+#' age of an individual abalone given physical measurements such as sex,
+#' weight, and height.
 #'
 #' Only a stratified sample of 211 rows of the original data set are used here.
 #'
@@ -56,7 +55,7 @@
 #' @family datasets
 "abalone"
 
-#' Heart disease
+#' Heart Disease
 #'
 #' Diagnostic attributes of patients classified as having heart disease or not.
 #'
@@ -103,7 +102,7 @@
 #' @family datasets
 "heart"
 
-#' Wine cultivars
+#' Wine Cultivars
 #'
 #' A data set of results from chemical analysis of wines grown in Italy
 #' from three different cultivars.
@@ -137,7 +136,7 @@
 #' @family datasets
 "wine"
 
-#' Student performance
+#' Student Performance
 #'
 #' A data set of the attributes of 382 students in secondary education
 #' collected from two schools. The goal is to predict the
@@ -194,7 +193,7 @@
 #' @family datasets
 "student"
 
-#' Glioma metabolomics
+#' Glioma Metabolomics
 #'
 #' Metabolomics dataset from 165 different plasma measurements from
 #' 94 patients (cases) with glioma (brain tumours) and 71 healthy controls. The

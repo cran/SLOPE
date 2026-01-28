@@ -2,7 +2,7 @@
 % Please edit documentation in R/train_slope.R
 \name{trainSLOPE}
 \alias{trainSLOPE}
-\title{Train a SLOPE model}
+\title{Train a SLOPE Model}
 \usage{
 trainSLOPE(
   x,
@@ -62,14 +62,6 @@ computationally so it is almost always best to leave this argument
 as it is and then choose which argument to focus on in the call
 to \code{\link[=plot.TrainedSLOPE]{plot.TrainedSLOPE()}}.
 }
-\section{Parallel operation}{
-
-This function uses the \strong{foreach} package to enable parallel
-operation. To enable this, simply register a parallel backend
-using, for instance, \code{doParallel::registerDoParallel()} from the
-\strong{doParallel} package before running this function.
-}
-
 \examples{
 # 8-fold cross-validation repeated 5 times
 tune <- trainSLOPE(subset(mtcars, select = c("mpg", "drat", "wt")),
@@ -81,10 +73,10 @@ tune <- trainSLOPE(subset(mtcars, select = c("mpg", "drat", "wt")),
 )
 }
 \seealso{
-\code{\link[=plot.TrainedSLOPE]{plot.TrainedSLOPE()}}
-
 Other model-tuning: 
 \code{\link{cvSLOPE}()},
-\code{\link{plot.TrainedSLOPE}()}
+\code{\link{plot.TrainedSLOPE}()},
+\code{\link{refit}()},
+\code{\link{summary.TrainedSLOPE}()}
 }
 \concept{model-tuning}
