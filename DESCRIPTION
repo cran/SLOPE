@@ -1,6 +1,6 @@
 Package: SLOPE
 Title: Sorted L1 Penalized Estimation
-Version: 2.0.0
+Version: 2.1.0
 Authors@R: 
     c(
       person(
@@ -91,14 +91,14 @@ LinkingTo: Rcpp, RcppEigen (>= 0.3.4.0.0), BH, bigmemory
 Suggests: covr, knitr, rmarkdown, spelling, testthat (>= 2.1.0),
         bigmemory
 SystemRequirements: C++17
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Language: en-US
 Encoding: UTF-8
 URL: https://jolars.github.io/SLOPE/, https://github.com/jolars/SLOPE
 BugReports: https://github.com/jolars/SLOPE/issues
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2026-01-27 15:02:59 UTC; jola
+Packaged: 2026-03-27 22:13:36 UTC; jola
 Author: Johan Larsson [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-4029-5945>),
   Jonas Wallin [aut] (ORCID: <https://orcid.org/0000-0003-0381-6593>),
@@ -123,4 +123,4 @@ Author: Johan Larsson [aut, cre] (ORCID:
   Junyang Qian [ctb] (code adapted from 'glmnet')
 Maintainer: Johan Larsson <johan@jolars.co>
 Repository: CRAN
-Date/Publication: 2026-01-28 06:10:44 UTC
+Date/Publication: 2026-03-28 06:11:28 UTC
