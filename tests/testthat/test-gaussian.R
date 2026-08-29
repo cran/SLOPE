@@ -8,21 +8,13 @@ test_that("unregularized gaussian models work as expected", {
 
   g <- SLOPE(x, y, family = "gaussian", alpha = 0)
 
-  expect_equivalent(
-    coef(lm_fit),
-    as.matrix(coef(g)),
-    tol = 1e-3
-  )
+  expect_equivalent(coef(lm_fit), as.matrix(coef(g)), tol = 1e-3)
 })
 
 test_that("wide and tall inputs work correctly", {
   set.seed(926)
 
-  grid <- expand.grid(
-    n = c(50, 100),
-    p = c(50, 100),
-    density = c(1, 0.5)
-  )
+  grid <- expand.grid(n = c(50, 100), p = c(50, 100), density = c(1, 0.5))
 
   for (i in seq_len(nrow(grid))) {
     n <- grid$n[i]
@@ -36,7 +28,7 @@ test_that("wide and tall inputs work correctly", {
 })
 
 test_that("diagonal X, known solution", {
-  n <- p <- 4
+  n <- 4
 
   x <- diag(n)
   y <- c(8, 6, 4, 2)
@@ -55,4 +47,5 @@ test_that("diagonal X, known solution", {
 
   beta <- coef(res)
 
-  expect_equal(as.vector(beta), c(4, 3, 2, 1), check.attributes = FALSE) })
+  expect_equal(as.vector(beta), c(4, 3, 2, 1), check.attributes = FALSE)
+})

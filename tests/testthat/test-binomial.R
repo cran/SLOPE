@@ -19,13 +19,7 @@ test_that("unregularized logistic regression matches output from glm()", {
     alpha = 1e-7
   )
 
-  intercept <- g_model$intercept
-
-  expect_equivalent(
-    coef(glm_fit),
-    as.vector(coef(g_model)),
-    tol = 1e-3
-  )
+  expect_equivalent(coef(glm_fit), as.vector(coef(g_model)), tol = 1e-3)
 })
 
 test_that("regularized slope logistic regression picks out correct features", {

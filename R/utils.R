@@ -1,17 +1,3 @@
-firstUpper <- function(x) {
-  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
-  x
-}
-
-camelCase <- function(x) {
-  s <- strsplit(x, "[^[:alnum:]]")
-
-  sapply(s, function(y) {
-    first <- toupper(substring(y, 1, 1))
-    paste(first, substring(y, 2), sep = "", collapse = "")
-  })
-}
-
 randomProblem <- function(
   n = 1000,
   p = 100,
@@ -21,12 +7,7 @@ randomProblem <- function(
   density = 1,
   amplitude = if (match.arg(response) == "poisson") 1 else 3,
   alpha = 1,
-  response = c(
-    "gaussian",
-    "binomial",
-    "poisson",
-    "multinomial"
-  ),
+  response = c("gaussian", "binomial", "poisson", "multinomial"),
   rho = 0
 ) {
   m <- n_targets
@@ -68,7 +49,7 @@ randomProblem <- function(
       beta <- matrix(beta, p, m)
       lin_pred_exp <- exp(x %*% beta)
       prob <- lin_pred_exp / rowSums(lin_pred_exp)
-      y <- apply(prob, 1, function(x) sample(1:m, 1, prob = x))
+      y <- apply(prob, 1, function(x) sample(seq_len(m), 1, prob = x))
     },
     poisson = {
       lambda <- as.double(exp(0.1 * x %*% beta))
@@ -76,10 +57,7 @@ randomProblem <- function(
     }
   )
 
-  dimnames(x) <- list(
-    seq_len(nrow(x)),
-    paste0("V", seq_len(ncol(x)))
-  )
+  dimnames(x) <- list(seq_len(nrow(x)), paste0("V", seq_len(ncol(x))))
 
   list(
     x = x,
@@ -93,13 +71,7 @@ randomProblem <- function(
 
 as_dgCMatrix <- function(x) {
   methods::as(
-    methods::as(
-      methods::as(
-        x,
-        "dgCMatrix"
-      ),
-      "sparseMatrix"
-    ),
+    methods::as(methods::as(x, "dgCMatrix"), "sparseMatrix"),
     "CsparseMatrix"
   )
 }

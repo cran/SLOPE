@@ -2,22 +2,21 @@
 #'
 #' Return predictions from models fit by [SLOPE()].
 #'
-#' @param object an object of class `"SLOPE"`, typically the result of
-#'   a call to [SLOPE()]
+#' @param object an object of class `"SLOPE"`, typically the result of a call to
+#'   [SLOPE()]
 #' @param x new data
 #' @param type type of prediction; `"link"` returns the linear predictors,
-#'   `"response"` returns the result of applying the link function,
-#'    and `"class"` returns class predictions.
+#'   `"response"` returns the result of applying the link function, and
+#'   `"class"` returns class predictions.
 #' @param ... ignored and only here for method consistency
-#' @param alpha penalty parameter for SLOPE models; if `NULL`, the
-#'   values used in the original fit will be used
-#' @param simplify if `TRUE`, [base::drop()] will be called before returning
-#'   the coefficients to drop extraneous dimensions
+#' @param alpha penalty parameter for SLOPE models; if `NULL`, the values used
+#'   in the original fit will be used
+#' @param simplify if `TRUE`, [base::drop()] will be called before returning the
+#'   coefficients to drop extraneous dimensions
 #' @param exact if `TRUE` and the given parameter values differ from those in
 #'   the original fit, the model will be refit by calling [stats::update()] on
-#'   the object with the new parameters. If `FALSE`, the predicted values
-#'   will be based on interpolated coefficients from the original
-#'   penalty path.
+#'   the object with the new parameters. If `FALSE`, the predicted values will
+#'   be based on interpolated coefficients from the original penalty path.
 #' @param sigma deprecated. Please use `alpha` instead.
 #'
 #' @seealso [stats::predict()], [stats::predict.glm()]
@@ -41,7 +40,6 @@ predict.SLOPE <- function(
   ...
 ) {
   # This method (the base method) only generates linear predictors
-
   if (inherits(x, "sparseMatrix")) {
     x <- as_dgCMatrix(x)
   }
@@ -89,10 +87,7 @@ predict.SLOPE <- function(
 
   lin_pred <- array(
     dim = c(n, m, n_penalties),
-    dimnames = list(
-      rownames(x),
-      dimnames(beta[[1L]])[[2]]
-    )
+    dimnames = list(rownames(x), dimnames(beta[[1L]])[[2]])
   )
 
   for (i in seq_len(n_penalties)) {
@@ -209,14 +204,10 @@ predict.MultinomialSLOPE <- function(
       path_length <- dim(lin_pred)[3]
 
       tmp <- array(0, c(n, m, path_length))
-      tmp[, 1:m, ] <- lin_pred
+      tmp[, seq_len(m), ] <- lin_pred
 
       aperm(
-        apply(
-          tmp,
-          c(1, 3),
-          function(x) exp(x) / sum(1 + exp(x))
-        ),
+        apply(tmp, c(1, 3), function(x) exp(x) / sum(1 + exp(x))),
         c(2, 1, 3)
       )
     },
@@ -226,12 +217,11 @@ predict.MultinomialSLOPE <- function(
       tmp <- apply(response, c(1, 3), which.max)
       class_names <- object$class_names
 
-      predicted_classes <-
-        apply(
-          tmp,
-          2,
-          function(a) factor(a, levels = 1:(m + 1), labels = class_names)
-        )
+      predicted_classes <- apply(
+        tmp,
+        2,
+        function(a) factor(a, levels = 1:(m + 1), labels = class_names)
+      )
       colnames(predicted_classes) <- dimnames(lin_pred)[[3]]
       predicted_classes
     }
