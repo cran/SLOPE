@@ -34,6 +34,14 @@ public:
    */
   double loss(const Eigen::MatrixXd& eta, const Eigen::MatrixXd& y) override;
 
+  double loss(const Eigen::MatrixXd& eta,
+              const Eigen::MatrixXd& y,
+              const Eigen::VectorXd& observation_weights) override;
+
+  double lossWithNormalizedWeights(const Eigen::MatrixXd& eta,
+                                   const Eigen::MatrixXd& y,
+                                   const Eigen::VectorXd& weights) override;
+
   /**
    * @brief Calculates the dual for the multinomial loss function.
    * @param theta The dual variables (n x m matrix).
@@ -48,6 +56,12 @@ public:
   Eigen::MatrixXd dualPoint(const Eigen::MatrixXd& eta,
                             const Eigen::MatrixXd& y,
                             bool fit_intercept) override;
+
+  Eigen::MatrixXd dualPoint(
+    const Eigen::MatrixXd& eta,
+    const Eigen::MatrixXd& y,
+    bool fit_intercept,
+    const Eigen::VectorXd& observation_weights) override;
 
   /**
    * @brief Preprocesses the response for the Multinomial model
@@ -64,6 +78,17 @@ public:
    * @return The hessian diagonal, a matrix of size (n x m)
    */
   Eigen::MatrixXd hessianDiagonal(const Eigen::MatrixXd& eta) override;
+
+  /** @brief Takes a damped Newton step for the joint intercept.
+   * @param beta0 Intercept vector to update.
+   * @param eta Linear predictor including the intercept.
+   * @param y Prepared response matrix.
+   * @param weights Normalized observation weights.
+   */
+  void refineIntercept(Eigen::VectorXd& beta0,
+                       Eigen::MatrixXd& eta,
+                       const Eigen::MatrixXd& y,
+                       const Eigen::VectorXd& weights);
 
   /**
    * @brief The link function

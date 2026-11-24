@@ -31,6 +31,14 @@ public:
    */
   double loss(const Eigen::MatrixXd& eta, const Eigen::MatrixXd& y) override;
 
+  double loss(const Eigen::MatrixXd& eta,
+              const Eigen::MatrixXd& y,
+              const Eigen::VectorXd& observation_weights) override;
+
+  double lossWithNormalizedWeights(const Eigen::MatrixXd& eta,
+                                   const Eigen::MatrixXd& y,
+                                   const Eigen::VectorXd& weights) override;
+
   /**
    * @brief Calculates the dual for the logistic loss function.
    * @param theta The dual variables.
@@ -45,6 +53,12 @@ public:
   Eigen::MatrixXd dualPoint(const Eigen::MatrixXd& eta,
                             const Eigen::MatrixXd& y,
                             bool fit_intercept) override;
+
+  Eigen::MatrixXd dualPoint(
+    const Eigen::MatrixXd& eta,
+    const Eigen::MatrixXd& y,
+    bool fit_intercept,
+    const Eigen::VectorXd& observation_weights) override;
 
   /**
    * @brief Calculates hessian diagonal

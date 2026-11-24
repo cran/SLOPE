@@ -11,33 +11,37 @@ trainSLOPE(
   number = 10,
   repeats = 1,
   measure = c("mse", "mae", "deviance", "misclass", "auc"),
-  ...
+  ...,
+  weights = NULL
 )
 }
 \arguments{
-\item{x}{the design matrix, which can be either a dense
-matrix of the standard \emph{matrix} class, or a sparse matrix
-inheriting from \link[Matrix:sparseMatrix]{Matrix::sparseMatrix}. Data frames will
-be converted to matrices internally.}
+\item{x}{the design matrix, which can be either a dense matrix of the
+standard \emph{matrix} class, or a sparse matrix inheriting from
+\link[Matrix:sparseMatrix]{Matrix::sparseMatrix}. Data frames will be converted to matrices
+internally.}
 
 \item{y}{the response, which for \code{family = "gaussian"} must be numeric; for
 \code{family = "binomial"} or \code{family = "multinomial"}, it can be a factor.}
 
-\item{q}{parameter controlling the shape of the lambda sequence, with
-usage varying depending on the type of path used and has no effect
-is a custom \code{lambda} sequence is used. Must be greater than \code{1e-6} and
-smaller than 1.}
+\item{q}{parameter controlling the shape of the lambda sequence, with usage
+varying depending on the type of path used and has no effect is a custom
+\code{lambda} sequence is used. Must be greater than \code{1e-6} and smaller than 1.}
 
 \item{number}{number of folds (cross-validation)}
 
 \item{repeats}{number of repeats for each fold (for repeated \emph{k}-fold cross
 validation)}
 
-\item{measure}{measure to try to optimize; note that you may
-supply \emph{multiple} values here and that, by default,
-all the possible measures for the given model will be used.}
+\item{measure}{measure to try to optimize; note that you may supply
+\emph{multiple} values here and that, by default, all the possible measures for
+the given model will be used.}
 
 \item{...}{other arguments to pass on to \code{\link[=SLOPE]{SLOPE()}}}
+
+\item{weights}{observation weights as in \code{\link[=SLOPE]{SLOPE()}}. Each training and
+validation fold must have positive total weight. Weights apply to both
+fitting and scoring within folds. The fold scores are averaged equally.}
 }
 \value{
 An object of class \code{"TrainedSLOPE"}, with the following slots:
@@ -48,7 +52,8 @@ and 0.95 confidence levels}
 values for the different metrics and their corresponding parameter values}
 \item{measure}{a \code{data.frame} listing the used metrics and their labels}
 \item{model}{the model fit to the entire data set}
-\item{training_data}{the training data used for tuning (\code{x} and \code{y})}
+\item{training_data}{the training data used for tuning (\code{x}, \code{y}, and \code{weights})}
+\item{family}{the model family used for tuning}
 \item{call}{the call}
 }
 \description{
@@ -56,16 +61,18 @@ This function trains a model fit by \code{\link[=SLOPE]{SLOPE()}} by tuning its 
 through cross-validation.
 }
 \details{
-Note that by default this method matches all of the available metrics
-for the given model family against those provided in the argument
-\code{measure}. Collecting these measures is not particularly demanding
-computationally so it is almost always best to leave this argument
-as it is and then choose which argument to focus on in the call
-to \code{\link[=plot.TrainedSLOPE]{plot.TrainedSLOPE()}}.
+Note that by default this method matches all of the available metrics for the
+given model family against those provided in the argument \code{measure}.
+Collecting these measures is not particularly demanding computationally so it
+is almost always best to leave this argument as it is and then choose which
+argument to focus on in the call to \code{\link[=plot.TrainedSLOPE]{plot.TrainedSLOPE()}}.
+The initial fit on the full data supplies the absolute alphas used in
+every fold.
 }
 \examples{
 # 8-fold cross-validation repeated 5 times
-tune <- trainSLOPE(subset(mtcars, select = c("mpg", "drat", "wt")),
+tune <- trainSLOPE(
+  subset(mtcars, select = c("mpg", "drat", "wt")),
   mtcars$hp,
   q = c(0.1, 0.2),
   number = 8,
@@ -74,10 +81,10 @@ tune <- trainSLOPE(subset(mtcars, select = c("mpg", "drat", "wt")),
 )
 }
 \seealso{
-Other model-tuning: 
-\code{\link{cvSLOPE}()},
-\code{\link{plot.TrainedSLOPE}()},
-\code{\link{refit}()},
-\code{\link{summary.TrainedSLOPE}()}
+Other model-tuning:
+\code{\link[=cvSLOPE]{cvSLOPE()}},
+\code{\link[=plot.TrainedSLOPE]{plot.TrainedSLOPE()}},
+\code{\link[=refit]{refit()}},
+\code{\link[=summary.TrainedSLOPE]{summary.TrainedSLOPE()}}
 }
 \concept{model-tuning}

@@ -8,6 +8,7 @@
 #include "../eigen_compat.h"
 #include "../losses/loss.h"
 #include "../math.h"
+#include "../observation_weights.h"
 #include "../sorted_l1_norm.h"
 #include "solver.h"
 #include <Eigen/Dense>
@@ -46,60 +47,68 @@ public:
   }
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::MatrixXd& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::MatrixXd& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::SparseMatrix<double>& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::SparseMatrix<double>& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::Map<Eigen::MatrixXd>& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::Map<Eigen::MatrixXd>& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::Map<Eigen::SparseMatrix<double>>& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::Map<Eigen::SparseMatrix<double>>& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
 private:
   template<typename MatrixType>
@@ -114,10 +123,22 @@ private:
                const MatrixType& x,
                const Eigen::VectorXd& x_centers,
                const Eigen::VectorXd& x_scales,
-               const Eigen::MatrixXd& y)
+               const Eigen::MatrixXd& y,
+               const Eigen::VectorXd& observation_weights)
   {
     using Eigen::MatrixXd;
     using Eigen::VectorXd;
+
+    VectorXd weights;
+    if (observation_weights.size() != 0) {
+      weights =
+        detail::normalizeObservationWeights(observation_weights, y.rows());
+    }
+    const bool weighted = !detail::uniformObservationWeights(weights);
+    const auto evaluate_loss = [&](const MatrixXd& predictor) {
+      return weighted ? loss->lossWithNormalizedWeights(predictor, y, weights)
+                      : loss->loss(predictor, y);
+    };
 
     int n_working = working_set.size();
 
@@ -125,11 +146,18 @@ private:
     Eigen::VectorXd beta_diff(n_working);
     Eigen::VectorXd beta0_old = beta0;
 
-    double g_old = loss->loss(eta, y);
+    double g_old = evaluate_loss(eta);
     double t_old = t;
 
-    Eigen::MatrixXd residual = loss->residual(eta, y);
-    Eigen::VectorXd intercept_grad = residual.colwise().mean();
+    VectorXd intercept_grad;
+    if (intercept) {
+      const MatrixXd residual = loss->residual(eta, y);
+      if (weighted) {
+        intercept_grad = detail::weightedMean(residual, weights).transpose();
+      } else {
+        intercept_grad = residual.colwise().mean().transpose();
+      }
+    }
     Eigen::VectorXd grad_working = gradient(working_set);
 
     int line_search_iter = 0;
@@ -166,7 +194,7 @@ private:
                             jit_normalization,
                             intercept);
 
-      double g = loss->loss(eta, y);
+      double g = evaluate_loss(eta);
       double q = g_old + beta_diff_norm;
 
       if (q >= g * (1 - 1e-12) || this->learning_rate < 1e-12) {

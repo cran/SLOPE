@@ -8,6 +8,7 @@
 
 #include "../clusters.h"
 #include "../losses/loss.h"
+#include "../losses/quadratic.h"
 #include "../sorted_l1_norm.h"
 #include "hybrid_cd.h"
 #include "pgd.h"
@@ -63,60 +64,68 @@ public:
   }
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::MatrixXd& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::MatrixXd& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::SparseMatrix<double>& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::SparseMatrix<double>& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::Map<Eigen::MatrixXd>& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::Map<Eigen::MatrixXd>& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
   /// @copydoc SolverBase::run
-  void run(Eigen::VectorXd& beta0,
-           Eigen::VectorXd& beta,
-           Eigen::MatrixXd& eta,
-           const Eigen::ArrayXd& lambda,
-           const std::unique_ptr<Loss>& loss,
-           const SortedL1Norm& penalty,
-           const Eigen::VectorXd& gradient,
-           const std::vector<int>& working_set,
-           const Eigen::Map<Eigen::SparseMatrix<double>>& x,
-           const Eigen::VectorXd& x_centers,
-           const Eigen::VectorXd& x_scales,
-           const Eigen::MatrixXd& y) override;
+  void run(
+    Eigen::VectorXd& beta0,
+    Eigen::VectorXd& beta,
+    Eigen::MatrixXd& eta,
+    const Eigen::ArrayXd& lambda,
+    const std::unique_ptr<Loss>& loss,
+    const SortedL1Norm& penalty,
+    const Eigen::VectorXd& gradient,
+    const std::vector<int>& working_set,
+    const Eigen::Map<Eigen::SparseMatrix<double>>& x,
+    const Eigen::VectorXd& x_centers,
+    const Eigen::VectorXd& x_scales,
+    const Eigen::MatrixXd& y,
+    const Eigen::VectorXd& observation_weights = Eigen::VectorXd()) override;
 
 private:
   /**
@@ -145,13 +154,16 @@ private:
                const MatrixType& x,
                const Eigen::VectorXd& x_centers,
                const Eigen::VectorXd& x_scales,
-               const Eigen::MatrixXd& y)
+               const Eigen::MatrixXd& y,
+               const Eigen::VectorXd& observation_weights)
   {
     using Eigen::MatrixXd;
     using Eigen::VectorXd;
 
     const int n = x.rows();
     const int m = eta.cols();
+    const VectorXd weights =
+      detail::normalizeObservationWeights(observation_weights, n);
 
     PGD pgd_solver(jit_normalization, intercept, "pgd");
 
@@ -167,7 +179,20 @@ private:
                    x,
                    x_centers,
                    x_scales,
-                   y);
+                   y,
+                   observation_weights);
+
+    if (this->cd_iterations == 0) {
+      return;
+    }
+
+    const bool safeguard =
+      dynamic_cast<const Quadratic*>(loss.get()) == nullptr;
+    VectorXd pgd_beta0, pgd_beta;
+    if (safeguard) {
+      pgd_beta0 = beta0;
+      pgd_beta = beta;
+    }
 
     Clusters clusters(beta);
 
@@ -175,9 +200,10 @@ private:
     MatrixXd w = MatrixXd::Ones(n, m);
     MatrixXd z = y;
 
-    loss->updateWeightsAndWorkingResponse(w, z, eta, y);
+    loss->updateWeightsAndWorkingResponse(w, z, eta, y, weights);
 
     MatrixXd residual = eta - z;
+    detail::maskZeroWeightRows(residual, weights);
     const VectorXd weight_sums = w.colwise().sum().transpose();
 
     Eigen::ArrayXd lambda_cumsum(lambda.size() + 1);
@@ -210,6 +236,8 @@ private:
                         rng,
                         this->cd_type);
 
+      detail::maskZeroWeightRows(residual, weights);
+
       double new_obj =
         computeObjective(penalty, beta, residual, w, lambda, working_set);
 
@@ -224,10 +252,31 @@ private:
       }
     }
 
-    // The residual is kept up to date, but not eta. So we need to compute
-    // it here.
-    eta = residual + z;
-    // TODO: register convergence status
+    if (!safeguard) {
+      eta = residual + z;
+      return;
+    }
+
+    MatrixXd trial_eta = residual + z;
+    const auto working_lambda = lambda.head(working_set.size());
+    const double step =
+      detail::backtrackLoss(*loss,
+                            eta,
+                            trial_eta,
+                            y,
+                            weights,
+                            penalty.eval(pgd_beta(working_set), working_lambda),
+                            penalty.eval(beta(working_set), working_lambda));
+    if (step == 0.0) {
+      beta0.swap(pgd_beta0);
+      beta.swap(pgd_beta);
+      return;
+    }
+    if (step < 1.0) {
+      beta0 = (1.0 - step) * pgd_beta0 + step * beta0;
+      beta = (1.0 - step) * pgd_beta + step * beta;
+    }
+    eta.swap(trial_eta);
   }
 
   double computeObjective(const SortedL1Norm& penalty,
